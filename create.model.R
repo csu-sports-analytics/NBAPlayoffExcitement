@@ -24,3 +24,47 @@ glm.nba <- glm(TeamPts ~ Team + Opponent + Location,
                family = "gaussian",
                weights = Game_Weight)
 
+#Testing model against actual game results
+model_games <- games %>%
+  select(., Team, Opponent, Location)
+model_game_TeamPts <- round(predict.glm(glm.nba, newdata = model_games, type = "response"))
+model_games <- cbind(model_games,model_game_TeamPts)
+
+library(ggplot2)
+plot(y=model_games$model_game_TeamPts,x=games$TeamPts)
+
+qqnorm(glm.nba$residuals)
+qqline(glm.nba$residuals)
+plot(glm.nba$residuals ~ glm.nba$fitted.values)
+
+
+#Checking what proportion of games did the simulation predict the winner
+wl_games <- rep(NA, nrow(games)/2)
+for(i in 1:(nrow(games)/2)){
+  if(isTRUE(games$TeamPts[i]>(games$TeamPts[i+(nrow(games)/2)]))){
+    wl_games[i] <- "W"
+  }
+  else{
+    wl_games[i] <- "L"
+  }
+}
+
+wl_model <- rep(NA, nrow(model_games)/2)
+for(i in 1:(nrow(model_games)/2)){
+  if(isTRUE(model_game_TeamPts[i]>(model_game_TeamPts[i+(nrow(games)/2)]))){
+    wl_model[i] <- "W"
+  }
+  else{
+    wl_model[i] <- "L"
+  }
+}
+
+count <- 0
+for(i in 1:(nrow(model_games)/2)){
+  if(isTRUE(wl_games[i]==wl_model[i])){
+    count <- count+1
+  }
+  else{
+  }
+}
+count/length(wl_model)
