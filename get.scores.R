@@ -32,11 +32,11 @@ for(i in 1:length(years)){
     }
     #Changing formats of the data and consolidating into only the data that we need
     month_sched$Date <- as.Date(month_sched$Date, "%a, %b %d,%Y")
-    month_sched$Visitor <- as.character(month_sched$`Visitor/Neutral`)
-    month_sched$VisPts <- as.numeric(as.character(month_sched[[4]]))
-    month_sched$Home <- as.character(month_sched$`Home/Neutral`)
-    month_sched$HomePts <- as.numeric(as.character(month_sched[[6]]))
-    month_sched <- month_sched[,c(1,11:14)]
+    month_sched$Opponent <- as.character(month_sched$`Visitor/Neutral`)
+    month_sched$OppPts <- as.numeric(as.character(month_sched[[4]]))
+    month_sched$Team <- as.character(month_sched$`Home/Neutral`)
+    month_sched$TeamPts <- as.numeric(as.character(month_sched[[6]]))
+    month_sched <- month_sched[,c(1,13,14,11,12)]
     games <- rbind(games,month_sched)
   }
 }
