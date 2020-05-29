@@ -24,19 +24,23 @@ glm.nba <- glm(TeamPts ~ Team + Opponent + Location,
                family = "gaussian",
                weights = Game_Weight)
 
-#Testing model against actual game results
-model_games <- games %>%
-  select(., Team, Opponent, Location)
-model_game_TeamPts <- round(predict.glm(glm.nba, newdata = model_games, type = "response"))
-model_games <- cbind(model_games,model_game_TeamPts)
-
-library(ggplot2)
-plot(y=model_games$model_game_TeamPts,x=games$TeamPts)
-
+#Model Diagnostic Plots
 qqnorm(glm.nba$residuals)
 qqline(glm.nba$residuals)
 plot(glm.nba$residuals ~ glm.nba$fitted.values)
 
+#Testing model against actual game results
+model_games <- games %>%
+  select(., Team, Opponent, Location)
+model_game_ExpPts <- as.numeric(as.character(unlist(predict.glm(glm.nba, newdata = model_games, se.fit = TRUE, type = "response")[[1]])))
+model_game_SE <- as.numeric(as.character(unlist(predict.glm(glm.nba, newdata = model_games, se.fit = TRUE, type = "response")[2])))
+model_game_Pts <- rep(NA, nrow(model_games))
+for(i in 1:nrow(model_games)){
+  model_game_Pts[i] <- round(rnorm(1,model_game_ExpPts[i],model_game_SE[i]))
+}
+model_games <- cbind(model_games,model_game_Pts)
+
+plot(y=model_games$model_game_Pts,x=games$TeamPts)
 
 #Checking what proportion of games did the simulation predict the winner
 wl_games <- rep(NA, nrow(games)/2)
