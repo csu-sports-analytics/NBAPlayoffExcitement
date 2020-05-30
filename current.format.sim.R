@@ -1,16 +1,13 @@
 #Inverts game perspective from home team to away team
 invert <- function(data, TeamPts = F) {
-  data <- mutate(data, Tmp = Team, Team = Opponent, Opponent = Tmp)
+  data <- mutate(data, Tmp = Team, Team = Opponent, Opponent = Tmp, 
+                 TmpPts = TeamPts, TeamPts = OppPts, OppPts = TmpPts,
+                 TmpElo = TeamElo, TeamElo=OpponentElo, OpponentElo = TmpElo)
   data$Tmp[data$Location == "H"] <- "A"
   data$Tmp[data$Location == "A"] <- "H"
   data$Tmp[data$Location == "N"] <- "N"
   data$Location <- data$Tmp
-  if(TeamPts) {
-    TmpPts <- data$TeamPts
-    data$TeamPts <- data$OppPts
-    data$OppPts <- TmpPts
-  }
-  return(select(data,-Tmp))
+  return(select(data,-c(Tmp,TmpElo,TmpPts)))
 }
 
 #Every series is best of 7 (2-2-1-1-1) so this will take the higher seed and give them

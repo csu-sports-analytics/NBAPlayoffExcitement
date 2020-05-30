@@ -3,6 +3,7 @@ library(RCurl)
 install.packages("XML")
 library(XML)
 library(tidyverse)
+library(stringr)
 
 #Using data from the 2018/19 and 2019/20 seasons
 years <- c(2019:2020)
@@ -41,3 +42,21 @@ for(i in 1:length(years)){
   }
 }
 
+#Scraping elo from FiveThirtyEight
+url_elo <- getURL("https://projects.fivethirtyeight.com/2020-nba-predictions/")
+elo_table <- readHTMLTable(url_elo)
+elo_table <- elo_table$`standings-table`
+elo_table$`Current rating` <- as.numeric(as.character(elo_table$`Current rating`))
+elo_table$Team <- as.character(elo_table$Team)
+elo_table <- elo_table[,-c(2,3)]
+#Removing record from the teams
+elo_table$Team <- substr(elo_table$Team,1,nchar(elo_table$Team)-5)
+
+#Adding current elo to game scores
+TeamElo <- rep(NA,nrow(games))
+OpponentElo <- rep(NA,nrow(games))
+games <- cbind(games,TeamElo,OpponentElo)
+for(i in 1:nrow(games)){
+  games$TeamElo[i] <- elo_table$`Current rating`[which(word(elo_table$Team,-1) == word(games$Team[i],-1))]
+  games$OpponentElo[i] <- elo_table$`Current rating`[which(word(elo_table$Team,-1) == word(games$Opponent[i],-1))]
+}

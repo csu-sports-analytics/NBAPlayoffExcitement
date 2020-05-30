@@ -1,3 +1,4 @@
+
 #Days since the game for weights for model
 games$DaysSince <- as.numeric(Sys.Date()-games$Date)
 #Which season the game was in, also for weighting model
@@ -12,14 +13,17 @@ games <- games %>%
 games_away <- games %>%
   select(., Date, Opponent, OppPts, Team, TeamPts,DaysSince, Season) %>%
   mutate(., Location = "A")
-names(games_away)=c("Date", "Team", "TeamPts", "Opponent", "OppPts", "DaysSince", "Season", "Location")
+names(games_away)=c("Date", "Team", "TeamPts", "Opponent", "OppPts", "TeamElo", "OpponentElo", "DaysSince", "Season", "Location")
 games <- rbind(games, games_away)
 #Weight games based on how long ago they were
 games <- games %>%
   mutate(., Game_Weight = Season*exp(-games$DaysSince/max(games$DaysSince)))
 
+
+
+
 #Making linear model to predict team score
-glm.nba <- glm(TeamPts ~ Team + Opponent + Location, 
+glm.nba <- lm(TeamPts ~ Team + Opponent + TeamElo + OpponentElo + Location, 
                data = games,
                family = "gaussian",
                weights = Game_Weight)
