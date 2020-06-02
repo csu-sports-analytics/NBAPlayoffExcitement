@@ -1,52 +1,34 @@
 #Inverts game perspective from home team to away team
 invert <- function(data, TeamPts = F) {
-  data <- mutate(data, Tmp = Team, Team = Opponent, Opponent = Tmp, 
-                 TmpPts = TeamPts, TeamPts = OppPts, OppPts = TmpPts,
-                 TmpElo = TeamElo, TeamElo=OpponentElo, OpponentElo = TmpElo)
+  data <- mutate(data, Tmp = Team, Team = Opponent, Opponent = Tmp)
   data$Tmp[data$Location == "H"] <- "A"
   data$Tmp[data$Location == "A"] <- "H"
   data$Tmp[data$Location == "N"] <- "N"
   data$Location <- data$Tmp
-  return(select(data,-c(Tmp,TmpElo,TmpPts)))
+  return(select(data,-Tmp))
 }
 
 #Every series is best of 7 (2-2-1-1-1) so this will take the higher seed and give them
 #home court advantage
 
 #We expect that the range of points for an NBA is between 50 and 185, so we can limit the points matrix
-min_pts <- 50
-max_pts <- 185
 gameSim <- function(high, low, game){
   #Higher seed is home
   if(isTRUE(game<3 | game == 5 | game == 7)){
     gamedf <- data.frame("Team" = high, "Opponent" = low, "Location" = "H", stringsAsFactors = F)
-    gametmp <- invert(gamedf)
-    gamedf <- rbind(gamedf,gametmp)
   }else{
     #Lower seed is home
-    gamedf <- data.frame("Team" = low, "Opponent" = high, "Location" = "H", stringsAsFactors = F)
-    gametmp <- invert(gamedf)
-    gamedf <- rbind(gamedf, gametmp)
+    gamedf <- data.frame("Team" = high, "Opponent" = low, "Location" = "A", stringsAsFactors = F)
   }
-  #Predicting game score
-  pts_pred <- as.numeric(as.character(unlist(predict.glm(glm.nba, newdata = gamedf, se.fit = TRUE, type = "response")[[1]])))
-  high_pred <- round(pts_pred[1]); low_pred <- round(pts_pred[2])
-  #SE of teams
-  se_pred <- as.numeric(as.character(unlist(predict.glm(glm.nba, newdata = gamedf, se.fit = TRUE, type = "response")[2])))
-  high_se <- se_pred[1]; low_se <- se_pred[2]
+  #Predicting game points difference
+  gamedf$exp_pts_diff <- as.numeric(as.character(unlist(predict.lm(lm.nba, newdata = gamedf, se.fit = TRUE, type = "response")[[1]])))
   
-  #Odds of points being acheived
-  pts_matrix <- dnorm(min_pts:max_pts, high_pred, high_se) %o% dnorm(min_pts:max_pts, low_pred, low_se)
-  
-  #Home teams win OT about 56% of the time, so we can reasonably add that to win_prob
-  #Instead of simulating OT
-  #https://www.scapps.org/jems/index.php/1/article/view/898
-  ot_prod <- sum(diag(pts_matrix))
-  win_prob <- sum(pts_matrix[lower.tri(pts_matrix)]) + (.56*ot_prod)
+  #Odds of points high seed winning given pts diff
+  win_prob <- predict.glm(glm.spread, newdata = gamedf, type = "response")
   
   #Returns TRUE or FALSE based on win probability
   #If TRUE, the higher seed won, if FALSE, the lower seed won
-  return(c(rbernoulli(1,win_prob), ot_prod, win_prob))
+  return(c(rbernoulli(1,win_prob), win_prob, gamedf$exp_pts_diff))
 }
 
 #Gathering teams that would make the playoffs if the season ended on March 11, 2020
@@ -71,6 +53,7 @@ r1Sim <- function(r1){
   numGame <- 0
   numHighOT <- 0
   numg6g7 <- 0
+  numClose <- 0
   #Setting up first round matchups for the west
   west <- filter(r1, Conf=="W")
   west1 <- data.frame(matrix(ncol=4,nrow=4))
@@ -95,19 +78,25 @@ r1Sim <- function(r1){
         outcome <- gameSim(high,low,g)
         numGame <- numGame+1
         #If outcome of sim is true, high team won the game
-        if(isTRUE(outcome == TRUE)){
+        if(isTRUE(outcome[[1]] == TRUE)){
           highW <- highW+1
-        }
-        #If outcome of sim is false, low team won the game
-        else{
+        }else{
+          #If outcome of sim is false, low team won the game
           lowW <- lowW+1
           numUpset <- numUpset +1
         }
         west1$highW[s] <- highW
         west1$lowW[s] <- lowW
-        #NBA games got to OT around 6% of the time, so if P(OT)>.15, it's "significant"
-        if(outcome[2]>.15){
+        #If win prob is between .45 and .55 we can say there is a decent chance the game
+        #goes to OT
+        if(abs(outcome[[2]]-.5)<.05){
           numHighOT <- numHighOT+1
+        }
+        else{}
+        # If predicted pts diff is less than 3, this is very close, one possession game
+        # that is likely going down to the wire
+        if(abs(outcome[[3]])<3){
+          numClose <- numClose + 1
         }
         else{}
       }
@@ -141,7 +130,7 @@ r1Sim <- function(r1){
         outcome <- gameSim(high,low,g)
         numGame <- numGame+1
         #If outcome of sim is true, high team won the game
-        if(isTRUE(outcome == TRUE)){
+        if(isTRUE(outcome[[1]] == TRUE)){
           highW <- highW+1
         }
         #If outcome of sim is false, low team won the game
@@ -151,9 +140,16 @@ r1Sim <- function(r1){
         }
         east1$highW[s] <- highW
         east1$lowW[s] <- lowW
-        #NBA games got to OT around 6% of the time, so if P(OT)>.15, it's "significant"
-        if(outcome[2]>.15){
+        #If win prob is between .45 and .55 we can say there is a decent chance the game
+        #goes to OT
+        if(isTRUE(abs(outcome[[2]]-.5)<.05)){
           numHighOT <- numHighOT+1
+        }
+        else{}
+        # If predicted pts diff is less than 3, this is very close, one possession game
+        # that is likely going down to the wire
+        if(isTRUE(abs(outcome[[3]])<3)){
+          numClose <- numClose + 1
         }
         else{}
       }
@@ -164,7 +160,7 @@ r1Sim <- function(r1){
   }
   #Counting how many series went to games 6 or 7
   numg6g7 <- sum(west1$highW+west1$lowW>5) + sum(east1$highW+east1$lowW>5)
-  return(c(west1,east1,numHighOT,numUpset/numGame,numg6g7))
+  return(c(west1,east1,numHighOT,numUpset/numGame,numg6g7,numClose))
 }
 r1results <- r1Sim(r1)
 #Reconstructing sim results
@@ -219,6 +215,7 @@ r2Sim <- function(r2){
   numGame <- 0
   numHighOT <- 0
   numg6g7 <- 0
+  numClose <- 0
   #Setting up second round matchups for the west
   west <- filter(r2, Conf=="W")
   west2 <- data.frame(matrix(ncol=4,nrow=2))
@@ -243,7 +240,7 @@ r2Sim <- function(r2){
         outcome <- gameSim(high,low,g)
         numGame <- numGame+1
         #If outcome of sim is true, high team won the game
-        if(isTRUE(outcome == TRUE)){
+        if(isTRUE(outcome[[1]] == TRUE)){
           highW <- highW+1
         }
         #If outcome of sim is false, low team won the game
@@ -253,9 +250,16 @@ r2Sim <- function(r2){
         }
         west2$highW[s] <- highW
         west2$lowW[s] <- lowW
-        #NBA games got to OT around 6% of the time, so if P(OT)>.15, it's "significant"
-        if(outcome[2]>.15){
+        #If win prob is between .45 and .55 we can say there is a decent chance the game
+        #goes to OT
+        if(abs(outcome[[2]]-.5)<.05){
           numHighOT <- numHighOT+1
+        }
+        else{}
+        # If predicted pts diff is less than 3, this is very close, one possession game
+        # that is likely going down to the wire
+        if(abs(outcome[[3]])<3){
+          numClose <- numClose + 1
         }
         else{}
       }
@@ -289,7 +293,7 @@ r2Sim <- function(r2){
         outcome <- gameSim(high,low,g)
         numGame <- numGame+1
         #If outcome of sim is true, high team won the game
-        if(isTRUE(outcome == TRUE)){
+        if(isTRUE(outcome[[1]] == TRUE)){
           highW <- highW+1
         }
         #If outcome of sim is false, low team won the game
@@ -299,9 +303,16 @@ r2Sim <- function(r2){
         }
         east2$highW[s] <- highW
         east2$lowW[s] <- lowW
-        #NBA games got to OT around 6% of the time, so if P(OT)>.15, it's "significant"
-        if(outcome[2]>.15){
+        #If win prob is between .45 and .55 we can say there is a decent chance the game
+        #goes to OT
+        if(abs(outcome[[2]]-.5)<.05){
           numHighOT <- numHighOT+1
+        }
+        else{}
+        # If predicted pts diff is less than 3, this is very close, one possession game
+        # that is likely going down to the wire
+        if(abs(outcome[[3]])<3){
+          numClose <- numClose + 1
         }
         else{}
       }
@@ -312,7 +323,7 @@ r2Sim <- function(r2){
   }
   #Counting how many series went to games 6 or 7
   numg6g7 <- sum(west2$highW+west2$lowW>5) + sum(east2$highW+east2$lowW>5)
-  return(c(west2,east2,numHighOT,numUpset/numGame,numg6g7))
+  return(c(west2,east2,numHighOT,numUpset/numGame,numg6g7,numClose))
 }
 r2results <- r2Sim(r2)
 #Reconstructing sim results
@@ -364,10 +375,12 @@ r3Sim <- function(r3){
   numGame <- 0
   numHighOT <- 0
   numg6g7 <- 0
+  numClose3 <- 0
   #Setting up third round matchups for the west
   west <- filter(r3, Conf=="W")
   west3 <- data.frame(matrix(ncol=4,nrow=1))
   colnames(west3) <- c("high", "low", "highW", "lowW")
+  #There is only one matchup in each conference
   i <- 1
   west3$high[i] <- west$Team[i]
   west3$highW[i] <- 0
@@ -387,24 +400,27 @@ r3Sim <- function(r3){
       outcome <- gameSim(high,low,g)
       numGame <- numGame+1
       #If outcome of sim is true, high team won the game
-      if(isTRUE(outcome == TRUE)){
+      if(isTRUE(outcome[[1]] == TRUE)){
         highW <- highW+1
-      }
-      #If outcome of sim is false, low team won the game
-      else{
+      }else{
+        #If outcome of sim is false, low team won the game
         lowW <- lowW+1
         numUpset <- numUpset +1
       }
       west3$highW[s] <- highW
       west3$lowW[s] <- lowW
-      #NBA games got to OT around 6% of the time, so if P(OT)>.15, it's "significant"
-      if(outcome[2]>.15){
+      #If win prob is between .45 and .55 we can say there is a decent chance the game
+      #goes to OT
+      if(abs(outcome[[2]]-.5)<.05){
         numHighOT <- numHighOT+1
-      }
-      else{}
-    }
-    #Once a team has reached 4 wins, store final totals in the df
-    else{
+      }else{}
+      # If predicted pts diff is less than 3, this is very close, one possession game
+      # that is likely going down to the wire
+      if(isTRUE(abs(outcome[[3]])<3)){
+        numClose3 <- numClose3 + 1
+      }else{}
+    }else{
+      #Once a team has reached 4 wins, store final totals in the df
     }
   }
   
@@ -412,6 +428,7 @@ r3Sim <- function(r3){
   east <- filter(r3, Conf=="E")
   east3 <- data.frame(matrix(ncol=4,nrow=1))
   colnames(east3) <- c("high", "low", "highW", "lowW")
+  #There is only one matchup in each conference
   i <- 1
   east3$high[i] <- east$Team[i]
   east3$highW[i] <- 0
@@ -431,7 +448,7 @@ r3Sim <- function(r3){
       outcome <- gameSim(high,low,g)
       numGame <- numGame+1
       #If outcome of sim is true, high team won the game
-      if(isTRUE(outcome == TRUE)){
+      if(isTRUE(outcome[[1]] == TRUE)){
         highW <- highW+1
       }
       #If outcome of sim is false, low team won the game
@@ -441,9 +458,16 @@ r3Sim <- function(r3){
       }
       east3$highW[s] <- highW
       east3$lowW[s] <- lowW
-      #NBA games got to OT around 6% of the time, so if P(OT)>.15, it's "significant"
-      if(outcome[2]>.15){
+      #If win prob is between .45 and .55 we can say there is a decent chance the game
+      #goes to OT
+      if(abs(outcome[[2]]-.5)<.05){
         numHighOT <- numHighOT+1
+      }
+      else{}
+      # If predicted pts diff is less than 3, this is very close, one possession game
+      # that is likely going down to the wire
+      if(abs(outcome[[3]])<3){
+        numClose3 <- numClose3 + 1
       }
       else{}
     }
@@ -453,7 +477,7 @@ r3Sim <- function(r3){
   }
   #Counting how many series went to games 6 or 7
   numg6g7 <- sum(west3$highW+west3$lowW>5) + sum(east3$highW+east3$lowW>5)
-  return(c(west3,east3,numHighOT,numUpset/numGame,numg6g7))
+  return(c(west3,east3,numHighOT,numUpset/numGame,numg6g7,numClose3))
 }
 r3results <- r3Sim(r3)
 #Reconstructing sim results
@@ -503,6 +527,7 @@ finalsSim <- function(finals){
   numGame <- 0
   numHighOT <- 0
   numg6g7 <- 0
+  numClose <- 0
   #Setting up finals matchup
   finals_mu <- data.frame(matrix(ncol=4,nrow=1))
   colnames(finals_mu) <- c("high", "low", "highW", "lowW")
@@ -525,7 +550,7 @@ finalsSim <- function(finals){
       outcome <- gameSim(high,low,g)
       numGame <- numGame+1
       #If outcome of sim is true, high team won the game
-      if(isTRUE(outcome == TRUE)){
+      if(isTRUE(outcome[[1]] == TRUE)){
         highW <- highW+1
       }
       #If outcome of sim is false, low team won the game
@@ -535,9 +560,16 @@ finalsSim <- function(finals){
       }
       finals_mu$highW[s] <- highW
       finals_mu$lowW[s] <- lowW
-      #NBA games got to OT around 6% of the time, so if P(OT)>.15, it's "significant"
-      if(outcome[2]>.15){
+      #If win prob is between .45 and .55 we can say there is a decent chance the game
+      #goes to OT
+      if(abs(outcome[[2]]-.5)<.05){
         numHighOT <- numHighOT+1
+      }
+      else{}
+      # If predicted pts diff is less than 3, this is very close, one possession game
+      # that is likely going down to the wire
+      if(abs(outcome[[3]])<3){
+        numClose <- numClose + 1
       }
       else{}
     }
@@ -553,20 +585,18 @@ finalsSim <- function(finals){
   else{
     champion <- finals_mu$low
   }
-  return(c(finals_mu,numHighOT,numUpset/numGame,numg6g7,champion))
+  return(c(finals_mu,numHighOT,numUpset/numGame,numg6g7,numClose,champion))
 }
 finalsresults <- finalsSim(finals)
 #Reconstructing sim results
 finals_mu <- data.frame(finalsresults[1],finalsresults[2],finalsresults[3],finalsresults[4], stringsAsFactors = FALSE)
-finals_mu
-
 
 
 
 
 
 #Doing 100 series simulations
-S <- 100
+S <- 10000
 playoffSim <- list()
 for(s in 1:S){
   #Gathering teams that would make the playoffs if the season ended on March 11, 2020
@@ -589,7 +619,7 @@ for(s in 1:S){
   #Reconstructing sim results
   west1 <- data.frame(r1results[1],r1results[2],r1results[3],r1results[4], stringsAsFactors = FALSE)
   east1 <- data.frame(r1results[5],r1results[6],r1results[7],r1results[8], stringsAsFactors = FALSE)
-  playoffSim <- c(playoffSim,west1,east1,r1results[9],r1results[10],r1results[11])
+  playoffSim <- c(playoffSim,west1,east1,r1results[9],r1results[10],r1results[11],r1results[12])
   
   
   r2 <- data.frame("Seed" = rep(NA,8), 
@@ -636,7 +666,7 @@ for(s in 1:S){
   #Reconstructing sim results
   west2 <- data.frame(r2results[1],r2results[2],r2results[3],r2results[4], stringsAsFactors = FALSE)
   east2 <- data.frame(r2results[5],r2results[6],r2results[7],r2results[8], stringsAsFactors = FALSE)
-  playoffSim <- c(playoffSim,west2,east2,r2results[9],r2results[10],r2results[11])
+  playoffSim <- c(playoffSim,west2,east2,r2results[9],r2results[10],r2results[11],r2results[11])
   
   r3 <- data.frame("Seed" = rep(NA,4), 
                    "Team" = c("", "", "",""),
@@ -680,7 +710,7 @@ for(s in 1:S){
   #Reconstructing sim results
   west3 <- data.frame(r3results[1],r3results[2],r3results[3],r3results[4], stringsAsFactors = FALSE)
   east3 <- data.frame(r3results[5],r3results[6],r3results[7],r3results[8], stringsAsFactors = FALSE)
-  playoffSim <- c(playoffSim,west3,east3,r3results[9],r3results[10],r3results[11])
+  playoffSim <- c(playoffSim,west3,east3,r3results[9],r3results[10],r3results[11],r1results[12])
   
   
   finals <- data.frame("Seed" = rep(NA,2), 
@@ -722,7 +752,7 @@ for(s in 1:S){
   finalsresults <- finalsSim(finals)
   #Reconstructing sim results
   finals_mu <- data.frame(finalsresults[1],finalsresults[2],finalsresults[3],finalsresults[4], stringsAsFactors = FALSE)
-  playoffSim <- c(playoffSim,finals_mu,finalsresults[5],finalsresults[6],finalsresults[7],finalsresults[8])
+  playoffSim <- c(playoffSim,finals_mu,finalsresults[5],finalsresults[6],finalsresults[7],finalsresults[8],finalsresults[9])
 }
 
 
@@ -732,7 +762,7 @@ for(s in 1:S){
 
 
 
-#Figuring out the indexing for highOTprob series, upsets, and number of 6/7 game series
+#Figuring out the indexing for highOTprob series, upsets, number of 6/7 game series and close games
 upsetIndex <- rep(NA,S)
 s <- 1
 for(i in 1:length(playoffSim)){
@@ -772,12 +802,21 @@ for(i in 1:S){
   s <- s + 1
 }
 
+#Number of series that went to 6 or 7 games
+closeGames <- rep(NA,S)
+s <- 1
+for(i in 1:S){
+  closeIndex <- upsetIndex[i]+2
+  closeGames[s] <- playoffSim[[closeIndex]]
+  s <- s + 1
+}
+
 #Champions
 champs <- rep(NA,S)
 s <- 1
 for(i in 1:S){
   #Champions are crowned every 41st entry in the playoffSim list
-  champIndex <- 41 * i
+  champIndex <- 45 * i
   champs[i] <- playoffSim[[champIndex]]
 }
-champs
+
