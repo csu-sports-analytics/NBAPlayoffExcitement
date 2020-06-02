@@ -20,18 +20,6 @@ gameSim <- function(high, low, game){
 }
 
 
-
-#Gathering teams that would make the playoffs if the season ended on March 11, 2020
-#Conference doesn't matter
-r1 <- data.frame("Seed" = 1:16, 
-                 "Team" = c("Milwaukee Bucks", "Los Angeles Lakers", "Toronto Raptors",
-                            "Los Angeles Clippers", "Boston Celtics", "Denver Nuggets",
-                            "Utah Jazz", "Miami Heat", "Oklahoma City Thunder",
-                            "Houston Rockets", "Indiana Pacers", "Philadelphia 76ers", 
-                            "Dallas Mavericks","Memphis Grizzlies", "Brooklyn Nets", 
-                            "Orlando Magic"),
-                 stringsAsFactors = FALSE)
-
 #Simulating First Round of Playoffs
 r1Sim <- function(r1){
   numUpset <- 0
@@ -92,36 +80,6 @@ r1Sim <- function(r1){
   #Counting how many series went to games 6 or 7
   numg6g7 <- sum(round1$highW+round1$lowW>5)
   return(c(round1,numHighOT,numUpset/numGame,numg6g7,numClose))
-}
-r1results <- r1Sim(r1)
-#Reconstructing sim results
-round1 <- data.frame(r1results[1],r1results[2],r1results[3],r1results[4], stringsAsFactors = FALSE)
-
-
-r2 <- data.frame("Seed" = rep(NA,8), 
-                 "Team" = c("", "", "",
-                            "", "", "",
-                            "", ""),
-                 stringsAsFactors = FALSE)
-#Taking series winners from first round and advancing them
-for(i in 1:8){
-  if(round1$highW[i]>round1$lowW[i]){
-    r2$Team[i] <- round1$high[i]
-    r2$Seed[i] <- r1$Seed[which(r1$Team==round1$high[i])]
-  }
-  else{
-    r2$Team[i] <- round1$low[i]
-    r2$Seed[i] <- r1$Seed[which(r1$Team==round1$low[i])]
-  }
-}
-for(i in 1:4){
-  if(r2$Seed[i] > r2$Seed[nrow(r2)-i+1]){
-    tmp <- r2[i,]
-    r2[i,] <- r2[nrow(r2)-i+1,]
-    r2[nrow(r2)-i+1,] <- tmp
-  }
-  else{
-  }
 }
 
 
@@ -187,34 +145,7 @@ r2Sim <- function(r2){
   numg6g7 <- sum(round2$highW+round2$lowW>5)
   return(c(round2,numHighOT,numUpset/numGame,numg6g7,numClose))
 }
-r2results <- r2Sim(r2)
-#Reconstructing sim results
-round2 <- data.frame(r2results[1],r2results[2],r2results[3],r2results[4], stringsAsFactors = FALSE)
 
-
-r3 <- data.frame("Seed" = rep(NA,4), 
-                 "Team" = c("", "", "",""),
-                 stringsAsFactors = FALSE)
-#Taking series winners from second round and advancing them
-for(i in 1:4){
-  if(isTRUE(round2$highW[i]>round2$lowW[i])){
-    r3$Team[i] <- round2$high[i]
-    r3$Seed[i] <- r1$Seed[which(r1$Team==round2$high[i])]
-  }
-  else{
-    r3$Team[i] <- round2$low[i]
-    r3$Seed[i] <- r1$Seed[which(r1$Team==round2$low[i])]
-  }
-}
-for(i in 1:2){
-  if(r3$Seed[i] > r3$Seed[nrow(r3)-i+1]){
-    tmp <- r3[i,]
-    r3[i,] <- r3[nrow(r3)-i+1,]
-    r3[nrow(r3)-i+1,] <- tmp
-  }
-  else{
-  }
-}
 
 #Simulating Third Round of Playoffs
 r3Sim <- function(r3){
@@ -275,29 +206,7 @@ r3Sim <- function(r3){
   numg6g7 <- sum(round3$highW+round3$lowW>5)
   return(c(round3,numHighOT,numUpset/numGame,numg6g7,numClose3))
 }
-r3results <- r3Sim(r3)
-#Reconstructing sim results
-round3 <- data.frame(r3results[1],r3results[2],r3results[3],r3results[4], stringsAsFactors = FALSE)
 
-
-finals <- data.frame("Seed" = rep(NA,2), 
-                     "Team" = c("", ""),
-                     stringsAsFactors = FALSE)
-#Taking series winners and advancing them
-for(i in 1:2){
-  if(isTRUE(round3$highW[i]>round3$lowW[i])){
-    finals$Team[i] <- round3$high[i]
-    finals$Seed[i] <- r1$Seed[which(r1$Team==round3$high[i])]
-  }else{
-    finals$Team[i] <- round3$low[i]
-    finals$Seed[i] <- r1$Seed[which(r1$Team==round3$low[i])]
-  }
-}
-if(finals$Seed[1] > finals$Seed[2]){
-  tmp <- finals[1,]
-  finals[1,] <- finals[2,]
-  finals[2,] <- tmp
-}
 
 #Simulating Third Round of Playoffs
 finalsSim <- function(finals){
@@ -365,10 +274,6 @@ finalsSim <- function(finals){
   }
   return(c(finals_mu,numHighOT,numUpset/numGame,numg6g7,numClose,champion))
 }
-finalsresults <- finalsSim(finals)
-#Reconstructing sim results
-finals_mu <- data.frame(finalsresults[1],finalsresults[2],finalsresults[3],finalsresults[4], stringsAsFactors = FALSE)
-
 
 
 
@@ -454,7 +359,7 @@ for(s in 1:S){
   r3results <- r3Sim(r3)
   #Reconstructing sim results
   round3 <- data.frame(r3results[1],r3results[2],r3results[3],r3results[4], stringsAsFactors = FALSE)
-  playoffSim <- c(playoffSim,round3,east3,r3results[5],r3results[6],r3results[7],r1results[8])
+  playoffSim <- c(playoffSim,round3,r3results[5],r3results[6],r3results[7],r1results[8])
   
   finals <- data.frame("Seed" = rep(NA,2), 
                        "Team" = c("", ""),
@@ -485,9 +390,6 @@ for(s in 1:S){
 
 
 
-
-
-
 #Figuring out the indexing for highOTprob series, upsets, number of 6/7 game series and close games
 upsetIndex <- rep(NA,S)
 s <- 1
@@ -501,9 +403,9 @@ for(i in 1:length(playoffSim)){
 }
 
 #Number of games in each round with high probability of OT
-highOT <- rep(NA,S)
+highOT <- rep(NA,length(upsetIndex))
 s <- 1
-for(i in 1:S){
+for(i in 1:length(upsetIndex)){
   otIndex <- upsetIndex[i]-1
   highOT[s] <- playoffSim[[otIndex]]
   s <- s + 1
@@ -511,27 +413,27 @@ for(i in 1:S){
 
 
 #Number of upsets in a round divided by total number of games
-upsets <- rep(NA,S)
+upsets <- rep(NA,length(upsetIndex))
 s <- 1
-for(i in 1:S){
+for(i in 1:length(upsetIndex)){
   upsets[s] <- playoffSim[[upsetIndex[i]]]
   s <- s + 1
 }
 
 
 #Number of series that went to 6 or 7 games
-longSeries <- rep(NA,S)
+longSeries <- rep(NA,length(upsetIndex))
 s <- 1
-for(i in 1:S){
+for(i in 1:length(upsetIndex)){
   g6g7Index <- upsetIndex[i]+1
   longSeries[s] <- playoffSim[[g6g7Index]]
   s <- s + 1
 }
 
 #Number of series that went to 6 or 7 games
-closeGames <- rep(NA,S)
+closeGames <- rep(NA,length(upsetIndex))
 s <- 1
-for(i in 1:S){
+for(i in 1:length(upsetIndex)){
   closeIndex <- upsetIndex[i]+2
   closeGames[s] <- playoffSim[[closeIndex]]
   s <- s + 1
@@ -542,7 +444,7 @@ champs <- rep(NA,S)
 s <- 1
 for(i in 1:S){
   #Champions are crowned every 41st entry in the playoffSim list
-  champIndex <- 37 * i
+  champIndex <- 33 * i
   champs[i] <- playoffSim[[champIndex]]
 }
 champs <- data.frame(champs)

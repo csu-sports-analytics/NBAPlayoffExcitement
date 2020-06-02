@@ -20,21 +20,6 @@ gameSim <- function(high, low, game){
   return(c(rbernoulli(1,win_prob), win_prob, gamedf$exp_pts_diff))
 }
 
-#Gathering teams that would make the playoffs if the season ended on March 11, 2020
-r1 <- data.frame("Seed" = 1:16, 
-                            "Team" = c("Milwaukee Bucks", "Los Angeles Lakers", "Toronto Raptors",
-                                       "Los Angeles Clippers", "Boston Celtics", "Denver Nuggets",
-                                       "Utah Jazz", "Miami Heat", "Oklahoma City Thunder",
-                                       "Houston Rockets", "Indiana Pacers", "Philadelphia 76ers", 
-                                       "Dallas Mavericks","Memphis Grizzlies", "Brooklyn Nets", 
-                                       "Orlando Magic"),
-                            "Conf" = c("E", "W", "E", "W", "E", "W", "W","E","W",
-                                       "W", "E", "E", "W", "W", "E","E"), 
-                            stringsAsFactors = FALSE)
-#Seeding each team based on conference
-r1 <- r1 %>%
-  group_by(., Conf) %>%
-  mutate(., ConfSeed = row_number())
 
 #Simulating First Round of Playoffs
 r1Sim <- function(r1){
@@ -150,50 +135,6 @@ r1Sim <- function(r1){
   #Counting how many series went to games 6 or 7
   numg6g7 <- sum(west1$highW+west1$lowW>5) + sum(east1$highW+east1$lowW>5)
   return(c(west1,east1,numHighOT,numUpset/numGame,numg6g7,numClose))
-}
-r1results <- r1Sim(r1)
-#Reconstructing sim results
-west1 <- data.frame(r1results[1],r1results[2],r1results[3],r1results[4], stringsAsFactors = FALSE)
-east1 <- data.frame(r1results[5],r1results[6],r1results[7],r1results[8], stringsAsFactors = FALSE)
-
-
-
-r2 <- data.frame("Seed" = rep(NA,8), 
-                         "Team" = c("", "", "",
-                                    "", "", "",
-                                    "", ""),
-                         "Conf" = c("", "", "", "", "", "", "",""), 
-                         "ConfSeed" = rep(NA,8),
-                         stringsAsFactors = FALSE)
-#Taking series winners from west first round and advancing them
-for(i in 1:4){
-  if(west1$highW[i]>west1$lowW[i]){
-    r2$Team[i] <- west1$high[i]
-    r2$Conf[i] <- "W"
-    r2$Seed[i] <- r1$Seed[which(r1$Team==west1$high[i])]
-    r2$ConfSeed[i] <- r1$ConfSeed[which(r1$Team==west1$high[i])]
-  }
-  else{
-    r2$Team[i] <- west1$low[i]
-    r2$Conf[i] <- "W"
-    r2$Seed[i] <- r1$Seed[which(r1$Team==west1$low[i])]
-    r2$ConfSeed[i] <- r1$ConfSeed[which(r1$Team==west1$low[i])]
-  }
-}
-#Taking series winners from east first round and advancing them
-for(i in 1:4){
-  if(isTRUE(east1$highW[i]>east1$lowW[i])){
-    r2$Team[i+4] <- east1$high[i]
-    r2$Conf[i+4] <- "E"
-    r2$Seed[i+4] <- r1$Seed[which(r1$Team==east1$high[i])]
-    r2$ConfSeed[i+4] <- r1$ConfSeed[which(r1$Team==east1$high[i])]
-  }
-  else{
-    r2$Team[i+4] <- east1$low[i]
-    r2$Conf[i+4] <- "E"
-    r2$Seed[i+4] <- r1$Seed[which(r1$Team==east1$low[i])]
-    r2$ConfSeed[i+4] <- r1$ConfSeed[which(r1$Team==east1$low[i])]
-  }
 }
 
 
@@ -313,47 +254,7 @@ r2Sim <- function(r2){
   numg6g7 <- sum(west2$highW+west2$lowW>5) + sum(east2$highW+east2$lowW>5)
   return(c(west2,east2,numHighOT,numUpset/numGame,numg6g7,numClose))
 }
-r2results <- r2Sim(r2)
-#Reconstructing sim results
-west2 <- data.frame(r2results[1],r2results[2],r2results[3],r2results[4], stringsAsFactors = FALSE)
-east2 <- data.frame(r2results[5],r2results[6],r2results[7],r2results[8], stringsAsFactors = FALSE)
 
-
-r3 <- data.frame("Seed" = rep(NA,4), 
-                 "Team" = c("", "", "",""),
-                 "Conf" = c("", "", "", ""), 
-                 "ConfSeed" = rep(NA,4),
-                 stringsAsFactors = FALSE)
-#Taking series winners from west second round and advancing them
-for(i in 1:2){
-  if(isTRUE(west2$highW[i]>west2$lowW[i])){
-    r3$Team[i] <- west2$high[i]
-    r3$Conf[i] <- "W"
-    r3$Seed[i] <- r1$Seed[which(r1$Team==west2$high[i])]
-    r3$ConfSeed[i] <- r1$ConfSeed[which(r1$Team==west2$high[i])]
-  }
-  else{
-    r3$Team[i] <- west2$low[i]
-    r3$Conf[i] <- "W"
-    r3$Seed[i] <- r1$Seed[which(r1$Team==west2$low[i])]
-    r3$ConfSeed[i] <- r1$ConfSeed[which(r1$Team==west2$low[i])]
-  }
-}
-#Taking series winners from east second round and advancing them
-for(i in 1:2){
-  if(isTRUE(east2$highW[i]>east2$lowW[i])){
-    r3$Team[i+2] <- east2$high[i]
-    r3$Conf[i+2] <- "E"
-    r3$Seed[i+2] <- r1$Seed[which(r1$Team==east2$high[i])]
-    r3$ConfSeed[i+2] <- r1$ConfSeed[which(r1$Team==east2$high[i])]
-  }
-  else{
-    r3$Team[i+2] <- east2$low[i]
-    r3$Conf[i+2] <- "E"
-    r3$Seed[i+2] <- r1$Seed[which(r1$Team==east2$low[i])]
-    r3$ConfSeed[i+2] <- r1$ConfSeed[which(r1$Team==east2$low[i])]
-  }
-}
 
 #Simulating Third Round of Playoffs
 r3Sim <- function(r3){
@@ -465,47 +366,7 @@ r3Sim <- function(r3){
   numg6g7 <- sum(west3$highW+west3$lowW>5) + sum(east3$highW+east3$lowW>5)
   return(c(west3,east3,numHighOT,numUpset/numGame,numg6g7,numClose3))
 }
-r3results <- r3Sim(r3)
-#Reconstructing sim results
-west3 <- data.frame(r3results[1],r3results[2],r3results[3],r3results[4], stringsAsFactors = FALSE)
-east3 <- data.frame(r3results[5],r3results[6],r3results[7],r3results[8], stringsAsFactors = FALSE)
 
-
-finals <- data.frame("Seed" = rep(NA,2), 
-                     "Team" = c("", ""),
-                     "Conf" = c("", ""), 
-                     "ConfSeed" = rep(NA,2),
-                     stringsAsFactors = FALSE)
-#Taking series winner from west and advancing them
-i <- 1
-if(isTRUE(west3$highW[i]>west3$lowW[i])){
-  finals$Team[i] <- west3$high[i]
-  finals$Conf[i] <- "W"
-  finals$Seed[i] <- r1$Seed[which(r1$Team==west3$high[i])]
-  finals$ConfSeed[i] <- r1$ConfSeed[which(r1$Team==west3$high[i])]
-}else{
-  finals$Team[i] <- west3$low[i]
-  finals$Conf[i] <- "W"
-  finals$Seed[i] <- r1$Seed[which(r1$Team==west3$low[i])]
-  finals$ConfSeed[i] <- r1$ConfSeed[which(r1$Team==west3$low[i])]
-}
-
-#Taking series winners from east first round and advancing them
-i <- 1
-if(isTRUE(east3$highW[i]>east3$lowW[i])){
-  finals$Team[i+1] <- east3$high[i]
-  finals$Conf[i+1] <- "E"
-  finals$Seed[i+1] <- r1$Seed[which(r1$Team==east3$high[i])]
-  finals$ConfSeed[i+1] <- r1$ConfSeed[which(r1$Team==east3$high[i])]
-}else{
-  finals$Team[i+1] <- east3$low[i]
-  finals$Conf[i+1] <- "E"
-  finals$Seed[i+1] <- r1$Seed[which(r1$Team==east3$low[i])]
-  finals$ConfSeed[i+1] <- r1$ConfSeed[which(r1$Team==east3$low[i])]
-}
-
-finals <- finals %>%
-  arrange(.,Seed)
 
 #Simulating Third Round of Playoffs
 finalsSim <- function(finals){
@@ -573,10 +434,6 @@ finalsSim <- function(finals){
   }
   return(c(finals_mu,numHighOT,numUpset/numGame,numg6g7,numClose,champion))
 }
-finalsresults <- finalsSim(finals)
-#Reconstructing sim results
-finals_mu <- data.frame(finalsresults[1],finalsresults[2],finalsresults[3],finalsresults[4], stringsAsFactors = FALSE)
-
 
 
 
@@ -735,8 +592,6 @@ for(s in 1:S){
   finals_mu <- data.frame(finalsresults[1],finalsresults[2],finalsresults[3],finalsresults[4], stringsAsFactors = FALSE)
   playoffSim <- c(playoffSim,finals_mu,finalsresults[5],finalsresults[6],finalsresults[7],finalsresults[8],finalsresults[9])
 }
-
-
 
 
 

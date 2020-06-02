@@ -488,9 +488,9 @@ for(i in 1:length(playoffSim)){
 }
 
 #Number of games in each round with high probability of OT
-highOT <- rep(NA,S)
+highOT <- rep(NA,length(upsetIndex))
 s <- 1
-for(i in 1:S){
+for(i in 1:length(upsetIndex)){
   otIndex <- upsetIndex[i]-1
   highOT[s] <- playoffSim[[otIndex]]
   s <- s + 1
@@ -498,27 +498,27 @@ for(i in 1:S){
 
 
 #Number of upsets in a round divided by total number of games
-upsets <- rep(NA,S)
+upsets <- rep(NA,length(upsetIndex))
 s <- 1
-for(i in 1:S){
+for(i in 1:length(upsetIndex)){
   upsets[s] <- playoffSim[[upsetIndex[i]]]
   s <- s + 1
 }
 
 
 #Number of series that went to 6 or 7 games
-longSeries <- rep(NA,S)
+longSeries <- rep(NA,length(upsetIndex))
 s <- 1
-for(i in 1:S){
+for(i in 1:length(upsetIndex)){
   g6g7Index <- upsetIndex[i]+1
   longSeries[s] <- playoffSim[[g6g7Index]]
   s <- s + 1
 }
 
 #Number of series that went to 6 or 7 games
-closeGames <- rep(NA,S)
+closeGames <- rep(NA,length(upsetIndex))
 s <- 1
-for(i in 1:S){
+for(i in 1:length(upsetIndex)){
   closeIndex <- upsetIndex[i]+2
   closeGames[s] <- playoffSim[[closeIndex]]
   s <- s + 1
