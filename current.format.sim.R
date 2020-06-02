@@ -1,17 +1,6 @@
-#Inverts game perspective from home team to away team
-invert <- function(data, TeamPts = F) {
-  data <- mutate(data, Tmp = Team, Team = Opponent, Opponent = Tmp)
-  data$Tmp[data$Location == "H"] <- "A"
-  data$Tmp[data$Location == "A"] <- "H"
-  data$Tmp[data$Location == "N"] <- "N"
-  data$Location <- data$Tmp
-  return(select(data,-Tmp))
-}
 
 #Every series is best of 7 (2-2-1-1-1) so this will take the higher seed and give them
 #home court advantage
-
-#We expect that the range of points for an NBA is between 50 and 185, so we can limit the points matrix
 gameSim <- function(high, low, game){
   #Higher seed is home
   if(isTRUE(game<3 | game == 5 | game == 7)){
@@ -206,8 +195,7 @@ for(i in 1:4){
     r2$ConfSeed[i+4] <- r1$ConfSeed[which(r1$Team==east1$low[i])]
   }
 }
-r2 <- r2 %>%
-  arrange(.,Seed)
+
 
 #Simulating Second Round of Playoffs
 r2Sim <- function(r2){
@@ -336,7 +324,7 @@ r3 <- data.frame("Seed" = rep(NA,4),
                  "Conf" = c("", "", "", ""), 
                  "ConfSeed" = rep(NA,4),
                  stringsAsFactors = FALSE)
-#Taking series winners from west first round and advancing them
+#Taking series winners from west second round and advancing them
 for(i in 1:2){
   if(isTRUE(west2$highW[i]>west2$lowW[i])){
     r3$Team[i] <- west2$high[i]
@@ -351,7 +339,7 @@ for(i in 1:2){
     r3$ConfSeed[i] <- r1$ConfSeed[which(r1$Team==west2$low[i])]
   }
 }
-#Taking series winners from east first round and advancing them
+#Taking series winners from east second round and advancing them
 for(i in 1:2){
   if(isTRUE(east2$highW[i]>east2$lowW[i])){
     r3$Team[i+2] <- east2$high[i]
@@ -366,8 +354,6 @@ for(i in 1:2){
     r3$ConfSeed[i+2] <- r1$ConfSeed[which(r1$Team==east2$low[i])]
   }
 }
-r3 <- r3 %>%
-  arrange(.,Seed)
 
 #Simulating Third Round of Playoffs
 r3Sim <- function(r3){
@@ -595,7 +581,7 @@ finals_mu <- data.frame(finalsresults[1],finalsresults[2],finalsresults[3],final
 
 
 
-#Doing 100 series simulations
+#Doing 10000 series simulations
 S <- 10000
 playoffSim <- list()
 for(s in 1:S){
@@ -659,14 +645,12 @@ for(s in 1:S){
       r2$ConfSeed[i+4] <- r1$ConfSeed[which(r1$Team==east1$low[i])]
     }
   }
-  r2 <- r2 %>%
-    arrange(.,Seed)
   
   r2results <- r2Sim(r2)
   #Reconstructing sim results
   west2 <- data.frame(r2results[1],r2results[2],r2results[3],r2results[4], stringsAsFactors = FALSE)
   east2 <- data.frame(r2results[5],r2results[6],r2results[7],r2results[8], stringsAsFactors = FALSE)
-  playoffSim <- c(playoffSim,west2,east2,r2results[9],r2results[10],r2results[11],r2results[11])
+  playoffSim <- c(playoffSim,west2,east2,r2results[9],r2results[10],r2results[11],r2results[12])
   
   r3 <- data.frame("Seed" = rep(NA,4), 
                    "Team" = c("", "", "",""),
@@ -703,8 +687,6 @@ for(s in 1:S){
       r3$ConfSeed[i+2] <- r1$ConfSeed[which(r1$Team==east2$low[i])]
     }
   }
-  r3 <- r3 %>%
-    arrange(.,Seed)
   
   r3results <- r3Sim(r3)
   #Reconstructing sim results
@@ -745,7 +727,6 @@ for(s in 1:S){
     finals$Seed[i+1] <- r1$Seed[which(r1$Team==east3$low[i])]
     finals$ConfSeed[i+1] <- r1$ConfSeed[which(r1$Team==east3$low[i])]
   }
-  
   finals <- finals %>%
     arrange(.,Seed)
   
@@ -819,4 +800,17 @@ for(i in 1:S){
   champIndex <- 45 * i
   champs[i] <- playoffSim[[champIndex]]
 }
+champs <- data.frame(champs)
+champsfreq <- data.frame(table(champs))
 
+#Getting colors of teams for plot
+install.packages("teamcolors")
+library(teamcolors)
+champscol <- intersect(r1$Team, champsfreq$champs)
+primcolors <- gather(data.frame(lapply(sort(champscol), team_pal))[1,])$value
+
+ggplot(data = champsfreq, aes(x = champs, y = Freq)) + geom_bar(stat = "identity", aes(fill = champs)) + 
+  theme_minimal() + theme(axis.text.x = element_text(angle = 90), legend.position = "none") + 
+  scale_fill_manual(values = primcolors) + geom_text(aes(label=Freq, vjust = -.25))+
+  labs(title = "Frequency of Simulated Championships (10,000 sims)", x = "Team", y = "Frequency", subtitle = "Current Playoff Format")
+  
