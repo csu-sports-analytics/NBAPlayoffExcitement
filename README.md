@@ -1,5 +1,5 @@
 # NBAPlayoffExcitement
-## Quinn Johnson's exploration of the most exciting NBA Playoff Format
+## Quinn Johnson's exploration of the most exciting (plausible) NBA Playoffs Format
 
 Throughout recent years, many leagues have altered their postseason systems (e.g. MLB Wild Card Game, NFL increasing postseason to 14 teams), and while the NBA has made some changes over the last couple decades regarding division and seeding, the same basic format has persisted. In this system, each conference sends its top eight teams to play in a bracket-style tournament consisting of three best-of-seven rounds in order to crown a conference champion. Then, the conference champions face off in a seven game series to name an NBA Champion. This format is simulated in the "current.format.sim.R" script.
 
