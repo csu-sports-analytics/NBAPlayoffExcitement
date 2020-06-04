@@ -4,6 +4,7 @@ install.packages("XML")
 library(XML)
 library(tidyverse)
 library(stringr)
+install.packages("teamcolors")
 
 #Using data from the 2018/19 and 2019/20 seasons
 years <- c(2019:2020)

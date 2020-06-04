@@ -61,9 +61,9 @@ r1Sim <- function(r1){
         }
         west1$highW[s] <- highW
         west1$lowW[s] <- lowW
-        #If win prob is between .45 and .55 we can say there is a decent chance the game
+        #If win prob is between .47 and .52 we can say there is a decent chance the game
         #goes to OT
-        if(abs(outcome[[2]]-.5)<.05){
+        if(abs(outcome[[2]]-.5)<.03){
           numHighOT <- numHighOT+1
         }
         else{}
@@ -114,9 +114,9 @@ r1Sim <- function(r1){
         }
         east1$highW[s] <- highW
         east1$lowW[s] <- lowW
-        #If win prob is between .45 and .55 we can say there is a decent chance the game
+        #If win prob is between .47 and .53 we can say there is a decent chance the game
         #goes to OT
-        if(isTRUE(abs(outcome[[2]]-.5)<.05)){
+        if(isTRUE(abs(outcome[[2]]-.5)<.03)){
           numHighOT <- numHighOT+1
         }
         else{}
@@ -179,9 +179,9 @@ r2Sim <- function(r2){
         }
         west2$highW[s] <- highW
         west2$lowW[s] <- lowW
-        #If win prob is between .45 and .55 we can say there is a decent chance the game
+        #If win prob is between .47 and .53 we can say there is a decent chance the game
         #goes to OT
-        if(abs(outcome[[2]]-.5)<.05){
+        if(abs(outcome[[2]]-.5)<.03){
           numHighOT <- numHighOT+1
         }
         else{}
@@ -232,9 +232,9 @@ r2Sim <- function(r2){
         }
         east2$highW[s] <- highW
         east2$lowW[s] <- lowW
-        #If win prob is between .45 and .55 we can say there is a decent chance the game
+        #If win prob is between .47 and .53 we can say there is a decent chance the game
         #goes to OT
-        if(abs(outcome[[2]]-.5)<.05){
+        if(abs(outcome[[2]]-.5)<.03){
           numHighOT <- numHighOT+1
         }
         else{}
@@ -296,9 +296,9 @@ r3Sim <- function(r3){
       }
       west3$highW[s] <- highW
       west3$lowW[s] <- lowW
-      #If win prob is between .45 and .55 we can say there is a decent chance the game
+      #If win prob is between .47 and .53 we can say there is a decent chance the game
       #goes to OT
-      if(abs(outcome[[2]]-.5)<.05){
+      if(abs(outcome[[2]]-.5)<.03){
         numHighOT <- numHighOT+1
       }else{}
       # If predicted pts diff is less than 3, this is very close, one possession game
@@ -345,9 +345,9 @@ r3Sim <- function(r3){
       }
       east3$highW[s] <- highW
       east3$lowW[s] <- lowW
-      #If win prob is between .45 and .55 we can say there is a decent chance the game
+      #If win prob is between .47 and .53 we can say there is a decent chance the game
       #goes to OT
-      if(abs(outcome[[2]]-.5)<.05){
+      if(abs(outcome[[2]]-.5)<.03){
         numHighOT <- numHighOT+1
       }
       else{}
@@ -407,9 +407,9 @@ finalsSim <- function(finals){
       }
       finals_mu$highW[s] <- highW
       finals_mu$lowW[s] <- lowW
-      #If win prob is between .45 and .55 we can say there is a decent chance the game
+      #If win prob is between .47 and .53 we can say there is a decent chance the game
       #goes to OT
-      if(abs(outcome[[2]]-.5)<.05){
+      if(abs(outcome[[2]]-.5)<.03){
         numHighOT <- numHighOT+1
       }
       else{}
@@ -438,9 +438,9 @@ finalsSim <- function(finals){
 
 
 
-#Doing 10000 series simulations
-S <- 10000
-playoffSim <- list()
+#Doing 20000 series simulations
+S <- 100
+playoffSim1 <- list()
 for(s in 1:S){
   #Gathering teams that would make the playoffs if the season ended on March 11, 2020
   r1 <- data.frame("Seed" = 1:16, 
@@ -462,7 +462,7 @@ for(s in 1:S){
   #Reconstructing sim results
   west1 <- data.frame(r1results[1],r1results[2],r1results[3],r1results[4], stringsAsFactors = FALSE)
   east1 <- data.frame(r1results[5],r1results[6],r1results[7],r1results[8], stringsAsFactors = FALSE)
-  playoffSim <- c(playoffSim,west1,east1,r1results[9],r1results[10],r1results[11],r1results[12])
+  playoffSim1 <- c(playoffSim1,west1,east1,r1results[9],r1results[10],r1results[11],r1results[12])
   
   
   r2 <- data.frame("Seed" = rep(NA,8), 
@@ -507,7 +507,7 @@ for(s in 1:S){
   #Reconstructing sim results
   west2 <- data.frame(r2results[1],r2results[2],r2results[3],r2results[4], stringsAsFactors = FALSE)
   east2 <- data.frame(r2results[5],r2results[6],r2results[7],r2results[8], stringsAsFactors = FALSE)
-  playoffSim <- c(playoffSim,west2,east2,r2results[9],r2results[10],r2results[11],r2results[12])
+  playoffSim1 <- c(playoffSim1,west2,east2,r2results[9],r2results[10],r2results[11],r2results[12])
   
   r3 <- data.frame("Seed" = rep(NA,4), 
                    "Team" = c("", "", "",""),
@@ -549,7 +549,7 @@ for(s in 1:S){
   #Reconstructing sim results
   west3 <- data.frame(r3results[1],r3results[2],r3results[3],r3results[4], stringsAsFactors = FALSE)
   east3 <- data.frame(r3results[5],r3results[6],r3results[7],r3results[8], stringsAsFactors = FALSE)
-  playoffSim <- c(playoffSim,west3,east3,r3results[9],r3results[10],r3results[11],r1results[12])
+  playoffSim1 <- c(playoffSim1,west3,east3,r3results[9],r3results[10],r3results[11],r1results[12])
   
   
   finals <- data.frame("Seed" = rep(NA,2), 
@@ -590,7 +590,7 @@ for(s in 1:S){
   finalsresults <- finalsSim(finals)
   #Reconstructing sim results
   finals_mu <- data.frame(finalsresults[1],finalsresults[2],finalsresults[3],finalsresults[4], stringsAsFactors = FALSE)
-  playoffSim <- c(playoffSim,finals_mu,finalsresults[5],finalsresults[6],finalsresults[7],finalsresults[8],finalsresults[9])
+  playoffSim1 <- c(playoffSim1,finals_mu,finalsresults[5],finalsresults[6],finalsresults[7],finalsresults[8],finalsresults[9])
 }
 
 
@@ -599,73 +599,66 @@ for(s in 1:S){
 
 
 #Figuring out the indexing for highOTprob series, upsets, number of 6/7 game series and close games
-upsetIndex <- rep(NA,S)
+upsetIndex1 <- rep(NA,(4*S))
 s <- 1
-for(i in 1:length(playoffSim)){
-  if(isTRUE(0<playoffSim[[i]] & playoffSim[[i]]<1)){
-    upsetIndex[s] <- i
-    s <- s + 1
-  }
-  else{
-  }
+#Inital locations of upsets in playoffSim list
+upsetIndex1[1] <- 10;upsetIndex1[2] <- 22; upsetIndex1[3] <- 34; upsetIndex1[4] <- 42
+for(i in 5:(4*S)){
+  #Each sim is 45 elements long in this format
+  upsetIndex1[i] <- upsetIndex1[i-4]+45
 }
 
 #Number of games in each round with high probability of OT
-highOT <- rep(NA,S)
+highOT1 <- rep(NA,length(upsetIndex1))
 s <- 1
-for(i in 1:S){
-  otIndex <- upsetIndex[i]-1
-  highOT[s] <- playoffSim[[otIndex]]
+for(i in 1:length(upsetIndex1)){
+  otIndex1 <- upsetIndex1[i]-1
+  highOT1[s] <- playoffSim1[[otIndex1]]
   s <- s + 1
 }
 
 
 #Number of upsets in a round divided by total number of games
-upsets <- rep(NA,S)
+upsets1 <- rep(NA,length(upsetIndex1))
 s <- 1
-for(i in 1:S){
-  upsets[s] <- playoffSim[[upsetIndex[i]]]
+for(i in 1:length(upsetIndex1)){
+  upsets1[s] <- playoffSim1[[upsetIndex1[i]]]
   s <- s + 1
 }
 
 
 #Number of series that went to 6 or 7 games
-longSeries <- rep(NA,S)
+longSeries1 <- rep(NA,length(upsetIndex1))
 s <- 1
-for(i in 1:S){
-  g6g7Index <- upsetIndex[i]+1
-  longSeries[s] <- playoffSim[[g6g7Index]]
+for(i in 1:length(upsetIndex1)){
+  g6g7Index1 <- upsetIndex1[i]+1
+  longSeries1[s] <- playoffSim1[[g6g7Index1]]
   s <- s + 1
 }
 
 #Number of series that went to 6 or 7 games
-closeGames <- rep(NA,S)
+closeGames1 <- rep(NA,length(upsetIndex1))
 s <- 1
-for(i in 1:S){
-  closeIndex <- upsetIndex[i]+2
-  closeGames[s] <- playoffSim[[closeIndex]]
+for(i in 1:length(upsetIndex1)){
+  closeIndex1 <- upsetIndex1[i]+2
+  closeGames1[s] <- playoffSim1[[closeIndex1]]
   s <- s + 1
 }
 
 #Champions
-champs <- rep(NA,S)
+champs1 <- rep(NA,S)
 s <- 1
 for(i in 1:S){
-  #Champions are crowned every 41st entry in the playoffSim list
-  champIndex <- 45 * i
-  champs[i] <- playoffSim[[champIndex]]
+  #Champions are crowned every 41st entry in the playoffSim1 list
+  champIndex1 <- 45 * i
+  champs1[i] <- playoffSim1[[champIndex1]]
 }
-champs <- data.frame(champs)
-champsfreq <- data.frame(table(champs))
+champs1 <- data.frame(champs1)
+champsfreq1 <- data.frame(table(champs1))
 
 #Getting colors of teams for plot
-install.packages("teamcolors")
 library(teamcolors)
-champscol <- intersect(r1$Team, champsfreq$champs)
-primcolors <- gather(data.frame(lapply(sort(champscol), team_pal))[1,])$value
+champscol1 <- intersect(r1$Team, champsfreq1$champs1)
+primcolors1 <- gather(data.frame(lapply(sort(champscol1), team_pal))[1,])$value
 
-ggplot(data = champsfreq, aes(x = champs, y = Freq)) + geom_bar(stat = "identity", aes(fill = champs)) + 
-  theme_minimal() + theme(axis.text.x = element_text(angle = 90), legend.position = "none") + 
-  scale_fill_manual(values = primcolors) + geom_text(aes(label=Freq, vjust = -.25))+
-  labs(title = "Frequency of Simulated Championships (10,000 sims)", x = "Team", y = "Frequency", subtitle = "Current Playoff Format")
   
