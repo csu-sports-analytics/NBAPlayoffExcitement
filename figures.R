@@ -66,7 +66,7 @@ ggplot(data = highOT, aes(x = Format, y = Count)) +
        subtitle = "Separated by Playoff Rounds (4 = Finals)",
        x = "Playoff Format") +
   geom_text(data=highOT, aes(y = max_group, label = Group, vjust = -.75, col = Group), show.legend = FALSE) +
-  ylim(0,13) + facet_wrap(~ Round)
+  ylim(0,15) + facet_wrap(~ Round)
 
 #Upset Ratio by rounds
 #Round 1
@@ -190,7 +190,6 @@ ggplot(data = closeGames, aes(x = Format, y = Count)) +
   geom_text(data=closeGames, aes(y = max_group, label = Group, vjust = -.75, col = Group), show.legend = FALSE) +
   ylim(0,30) +
   facet_wrap(~ Round)
-
 
 
 

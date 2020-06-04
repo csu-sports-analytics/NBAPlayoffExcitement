@@ -279,7 +279,7 @@ finalsSim <- function(finals){
 
 
 #Doing 20000 series simulations
-S <- 100
+S <- 20000
 playoffSim2 <- list()
 for(s in 1:S){
   #Gathering teams that would make the playoffs if the season ended on March 11, 2020
@@ -450,7 +450,7 @@ champsfreq2 <- data.frame(table(champs2))
 
 #Getting colors of teams for plot
 library(teamcolors)
-champscol2 <- intersect(r1$Team, champsfreq2$champs2)
+champscol2 <- intersect(allTeams, champsfreq2$champs2)
 primcolors2 <- gather(data.frame(lapply(sort(champscol2), team_pal))[1,])$value
 
 

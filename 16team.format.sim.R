@@ -358,7 +358,7 @@ finalsSim <- function(finals){
 
 
 #Doing 20000 series simulations
-S <- 100
+S <- 20000
 playoffSim3 <- list()
 for(s in 1:S){
   #Gathering teams that would make the playoffs if the top 16 teams in the NBA were chosen
@@ -528,7 +528,7 @@ champsfreq3 <- data.frame(table(champs3))
 
 #Getting colors of teams for plot
 library(teamcolors)
-champscol3 <- intersect(r1$Team, champsfreq3$champs3)
+champscol3 <- intersect(allTeams, champsfreq3$champs3)
 primcolors3 <- gather(data.frame(lapply(sort(champscol3), team_pal))[1,])$value
 
 
