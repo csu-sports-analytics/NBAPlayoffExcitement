@@ -1,7 +1,7 @@
 #Must get scores from 2016/17 and 2017/18 because this is the last time this
 #scenario would be applicable
 
-#Using data from the 2018/19 and 2019/20 seasons
+#Using data from the 2016/17 and 2017/28 seasons
 years <- c(2017:2018)
 
 #Creating complete schedule
@@ -102,7 +102,7 @@ gameSim <- function(high, low, game){
 
 
 #Simulating First Round of Playoffs
-r1Sim <- function(r1){
+r1Sim16 <- function(r1){
   numUpset <- 0
   numGame <- 0
   numHighOT <- 0
@@ -160,12 +160,12 @@ r1Sim <- function(r1){
   }
   #Counting how many series went to games 6 or 7
   numg6g7 <- sum(round1$highW+round1$lowW>5)
-  return(c(round1,numHighOT,numUpset/numGame,numg6g7,numClose))
+  return(c(round1,numHighOT/numGame,numUpset/numGame,numg6g7/8,numClose/numGame))
 }
 
 
 #Simulating Second Round of Playoffs
-r2Sim <- function(r2){
+r2Sim16 <- function(r2){
   numUpset <- 0
   numGame <- 0
   numHighOT <- 0
@@ -224,17 +224,17 @@ r2Sim <- function(r2){
   }
   #Counting how many series went to games 6 or 7
   numg6g7 <- sum(round2$highW+round2$lowW>5)
-  return(c(round2,numHighOT,numUpset/numGame,numg6g7,numClose))
+  return(c(round2,numHighOT/numGame,numUpset/numGame,numg6g7/4,numClose/numGame))
 }
 
 
 #Simulating Third Round of Playoffs
-r3Sim <- function(r3){
+r3Sim16 <- function(r3){
   numUpset <- 0
   numGame <- 0
   numHighOT <- 0
   numg6g7 <- 0
-  numClose3 <- 0
+  numClose <- 0
   #Setting up third round matchups
   round3 <- data.frame(matrix(ncol=4,nrow=2))
   colnames(round3) <- c("high", "low", "highW", "lowW")
@@ -276,7 +276,7 @@ r3Sim <- function(r3){
         # If predicted pts diff is less than 3, this is very close, one possession game
         # that is likely going down to the wire
         if(isTRUE(abs(outcome[[3]])<3)){
-          numClose3 <- numClose3 + 1
+          numClose <- numClose + 1
         }else{}
       }else{
         #Once a team has reached 4 wins, store final totals in the df
@@ -285,12 +285,12 @@ r3Sim <- function(r3){
   }
   #Counting how many series went to games 6 or 7
   numg6g7 <- sum(round3$highW+round3$lowW>5)
-  return(c(round3,numHighOT,numUpset/numGame,numg6g7,numClose3))
+  return(c(round3,numHighOT/numGame,numUpset/numGame,numg6g7/2,numClose/numGame))
 }
 
 
 #Simulating Third Round of Playoffs
-finalsSim <- function(finals){
+finalsSim16 <- function(finals){
   numUpset <- 0
   numGame <- 0
   numHighOT <- 0
@@ -353,27 +353,27 @@ finalsSim <- function(finals){
   else{
     champion <- finals_mu$low
   }
-  return(c(finals_mu,numHighOT,numUpset/numGame,numg6g7,numClose,champion))
+  return(c(finals_mu,numHighOT/numGame,numUpset/numGame,numg6g7,numClose/numGame,champion))
 }
 
 
 #Doing 20000 series simulations
-S <- 20000
+S <- 100
 playoffSim3 <- list()
 for(s in 1:S){
   #Gathering teams that would make the playoffs if the top 16 teams in the NBA were chosen
   r1 <- data.frame("Seed" = 1:16, 
                    "Team" = c("Houston Rockets", "Toronto Raptors", "Golden State Warriors",
                               "Boston Celtics", "Philadelphia 76ers", "Cleveland Cavaliers",
-                              "Portland Trail Blazers", "Indiana Pacers", "New Orleans Pelicans",
-                              "Oklahoma City Thunder", "Utah Jazz", "Minnesota Timberwolves", 
-                              "San Antonio Spurs","Denver Nuggets", "Miami Heat", 
-                              "Milwaukee Bucks"),
-                   "Conf" = c("W", "E", "W", "E", "E", "E", "W","E","W",
+                              "Portland Trail Blazers", "Oklahoma City Thunder", "Indiana Pacers", 
+                              "Utah Jazz", "New Orleans Pelicans", "San Antonio Spurs",
+                              "Minnesota Timberwolves", "Denver Nuggets",
+                              "Miami Heat", "Milwaukee Bucks"),
+                   "Conf" = c("W", "E", "W", "E", "E", "E", "W","W","E",
                               "W", "W", "W", "W", "W", "E","E"), 
                    stringsAsFactors = FALSE)
   
-  r1results <- r1Sim(r1)
+  r1results <- r1Sim16(r1)
   #Reconstructing sim results
   round1 <- data.frame(r1results[1],r1results[2],r1results[3],r1results[4], stringsAsFactors = FALSE)
   playoffSim3 <- c(playoffSim3,round1,r1results[5],r1results[6],r1results[7],r1results[8])
@@ -405,7 +405,7 @@ for(s in 1:S){
     }
   }
   
-  r2results <- r2Sim(r2)
+  r2results <- r2Sim16(r2)
   #Reconstructing sim results
   round2 <- data.frame(r2results[1],r2results[2],r2results[3],r2results[4], stringsAsFactors = FALSE)
   playoffSim3 <- c(playoffSim3,round2,r2results[5],r2results[6],r2results[7],r2results[8])
@@ -435,7 +435,7 @@ for(s in 1:S){
     }
   }
   
-  r3results <- r3Sim(r3)
+  r3results <- r3Sim16(r3)
   #Reconstructing sim results
   round3 <- data.frame(r3results[1],r3results[2],r3results[3],r3results[4], stringsAsFactors = FALSE)
   playoffSim3 <- c(playoffSim3,round3,r3results[5],r3results[6],r3results[7],r1results[8])
@@ -459,7 +459,7 @@ for(s in 1:S){
     finals[2,] <- tmp
   }
   
-  finalsresults <- finalsSim(finals)
+  finalsresults <- finalsSim16(finals)
   #Reconstructing sim results
   finals_mu <- data.frame(finalsresults[1],finalsresults[2],finalsresults[3],finalsresults[4], stringsAsFactors = FALSE)
   playoffSim3 <- c(playoffSim3,finals_mu,finalsresults[5],finalsresults[6],finalsresults[7],finalsresults[8],finalsresults[9])

@@ -22,7 +22,7 @@ gameSim <- function(high, low, game){
 
 
 #Simulating First Round of Playoffs
-r1Sim <- function(r1){
+r1SimCurr <- function(r1){
   numUpset <- 0
   numGame <- 0
   numHighOT <- 0
@@ -134,12 +134,12 @@ r1Sim <- function(r1){
   }
   #Counting how many series went to games 6 or 7
   numg6g7 <- sum(west1$highW+west1$lowW>5) + sum(east1$highW+east1$lowW>5)
-  return(c(west1,east1,numHighOT,numUpset/numGame,numg6g7,numClose))
+  return(c(west1,east1,numHighOT/numGame,numUpset/numGame,numg6g7/8,numClose/numGame))
 }
 
 
 #Simulating Second Round of Playoffs
-r2Sim <- function(r2){
+r2SimCurr <- function(r2){
   numUpset <- 0
   numGame <- 0
   numHighOT <- 0
@@ -252,12 +252,12 @@ r2Sim <- function(r2){
   }
   #Counting how many series went to games 6 or 7
   numg6g7 <- sum(west2$highW+west2$lowW>5) + sum(east2$highW+east2$lowW>5)
-  return(c(west2,east2,numHighOT,numUpset/numGame,numg6g7,numClose))
+  return(c(west2,east2,numHighOT/numGame,numUpset/numGame,numg6g7/4,numClose/numGame))
 }
 
 
 #Simulating Third Round of Playoffs
-r3Sim <- function(r3){
+r3SimCurr <- function(r3){
   numUpset <- 0
   numGame <- 0
   numHighOT <- 0
@@ -364,12 +364,12 @@ r3Sim <- function(r3){
   }
   #Counting how many series went to games 6 or 7
   numg6g7 <- sum(west3$highW+west3$lowW>5) + sum(east3$highW+east3$lowW>5)
-  return(c(west3,east3,numHighOT,numUpset/numGame,numg6g7,numClose3))
+  return(c(west3,east3,numHighOT/numGame,numUpset/numGame,numg6g7/2,numClose3/numGame))
 }
 
 
 #Simulating Third Round of Playoffs
-finalsSim <- function(finals){
+finalsSimCurr <- function(finals){
   numUpset <- 0
   numGame <- 0
   numHighOT <- 0
@@ -432,14 +432,14 @@ finalsSim <- function(finals){
   else{
     champion <- finals_mu$low
   }
-  return(c(finals_mu,numHighOT,numUpset/numGame,numg6g7,numClose,champion))
+  return(c(finals_mu,numHighOT/numGame,numUpset/numGame,numg6g7,numClose/numGame,champion))
 }
 
 
 
 
 #Doing 20000 series simulations
-S <- 20000
+S <- 100
 playoffSim1 <- list()
 for(s in 1:S){
   #Gathering teams that would make the playoffs if the season ended on March 11, 2020
@@ -458,7 +458,7 @@ for(s in 1:S){
     group_by(., Conf) %>%
     mutate(., ConfSeed = row_number())
   
-  r1results <- r1Sim(r1)
+  r1results <- r1SimCurr(r1)
   #Reconstructing sim results
   west1 <- data.frame(r1results[1],r1results[2],r1results[3],r1results[4], stringsAsFactors = FALSE)
   east1 <- data.frame(r1results[5],r1results[6],r1results[7],r1results[8], stringsAsFactors = FALSE)
@@ -503,7 +503,7 @@ for(s in 1:S){
     }
   }
   
-  r2results <- r2Sim(r2)
+  r2results <- r2SimCurr(r2)
   #Reconstructing sim results
   west2 <- data.frame(r2results[1],r2results[2],r2results[3],r2results[4], stringsAsFactors = FALSE)
   east2 <- data.frame(r2results[5],r2results[6],r2results[7],r2results[8], stringsAsFactors = FALSE)
@@ -545,7 +545,7 @@ for(s in 1:S){
     }
   }
   
-  r3results <- r3Sim(r3)
+  r3results <- r3SimCurr(r3)
   #Reconstructing sim results
   west3 <- data.frame(r3results[1],r3results[2],r3results[3],r3results[4], stringsAsFactors = FALSE)
   east3 <- data.frame(r3results[5],r3results[6],r3results[7],r3results[8], stringsAsFactors = FALSE)
@@ -587,7 +587,7 @@ for(s in 1:S){
   finals <- finals %>%
     arrange(.,Seed)
   
-  finalsresults <- finalsSim(finals)
+  finalsresults <- finalsSimCurr(finals)
   #Reconstructing sim results
   finals_mu <- data.frame(finalsresults[1],finalsresults[2],finalsresults[3],finalsresults[4], stringsAsFactors = FALSE)
   playoffSim1 <- c(playoffSim1,finals_mu,finalsresults[5],finalsresults[6],finalsresults[7],finalsresults[8],finalsresults[9])

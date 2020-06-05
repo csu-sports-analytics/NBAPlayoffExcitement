@@ -47,12 +47,7 @@ for(i in 1:length(years)){
 games <- games %>%
   mutate(PtsDiff = TeamPts-OppPts)
 
-allTeams = c("Milwaukee Bucks", "Los Angeles Lakers", "Toronto Raptors",
-           "Los Angeles Clippers", "Boston Celtics", "Denver Nuggets",
-           "Utah Jazz", "Miami Heat", "Oklahoma City Thunder",
-           "Houston Rockets", "Indiana Pacers", "Philadelphia 76ers", 
-           "Dallas Mavericks","Memphis Grizzlies", "Brooklyn Nets", 
-           "Orlando Magic")
+allTeams = unique(games$Team)[1:30]
 
 
 

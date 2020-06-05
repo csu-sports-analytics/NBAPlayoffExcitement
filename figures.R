@@ -27,6 +27,7 @@ ggplot(data = champsfreq3, aes(x = champs3, y = Freq)) + geom_bar(stat = "identi
   scale_fill_manual(values = primcolors3) + geom_text(aes(label=Freq, vjust = -.25))+
   labs(title = "Frequency of Simulated Championships (20,000 sims)", x = "Team", y = "Frequency", subtitle = "16 Total Teams, Conference-less Playoff Format for 2017/18 Season")
 
+
 #High Overtime for by rounds
 #Round 1
 highOT1r1 <- data.frame(Count = highOT1[seq(1, length(highOT1), 4)]) %>% mutate(., Round = 1, Format = "Current")
@@ -62,11 +63,11 @@ highOT <- highOT %>%
 ggplot(data = highOT, aes(x = Format, y = Count)) +
   geom_boxplot(aes(fill = Group), show.legend = FALSE) + 
   theme_minimal() + 
-  labs(title = "Number of Games With High Probability of Overtime",
+  labs(title = "Percentage of Games With High Probability of Overtime",
        subtitle = "Separated by Playoff Rounds (4 = Finals)",
-       x = "Playoff Format") +
+       x = "Playoff Format", y = "# of Games with High OT Prob/Total # of Games Played") +
   geom_text(data=highOT, aes(y = max_group, label = Group, vjust = -.75, col = Group), show.legend = FALSE) +
-  ylim(0,15) + facet_wrap(~ Round)
+  facet_wrap(~ Round) + scale_y_continuous(limits = c(0,1.1), labels = scales::percent_format(), breaks = c(0,.25,.5,.75,1))
 
 #High OT HSD Tests (Not separated by rounds)
 highOT1 <- data.frame(Count = highOT1) %>% mutate(., Format = "Current")
@@ -86,10 +87,11 @@ highOTf <- highOTf %>%
 ggplot(data = highOTf, aes(x = Format, y = Count)) +
   geom_boxplot(aes(fill = Group), show.legend = FALSE) + 
   theme_minimal() + 
-  labs(title = "Number of Games With High Probability of Overtime",
+  labs(title = "Percentage of Games With High Probability of Overtime",
        subtitle = "Across All Rounds",
-       x = "Playoff Format") +
-  geom_text(data=highOTf, aes(y = max_group, label = Group, vjust = -.75, col = Group), show.legend = FALSE)
+       x = "Playoff Format", y = "# of Games with High OT Prob/Total # of Games Played") +
+  geom_text(data=highOTf, aes(y = max_group, label = Group, vjust = -.75, col = Group), show.legend = FALSE) +
+  scale_y_continuous(limits = c(0,1.1), labels = scales::percent_format(), breaks = c(0,.25,.5,.75,1))
 
 
 
@@ -130,12 +132,11 @@ upsets <- upsets %>%
 ggplot(data = upsets, aes(x = Format, y = Count)) +
   geom_boxplot(aes(fill = Group), show.legend = FALSE) + 
   theme_minimal() + 
-  labs(title = "Number of Upsets (Lower Seed Beat Higher Seed)/Total Number of Games in the Round",
+  labs(title = "Percentage of Upsets (Lower Seed Beat Higher Seed)",
        subtitle = "Separated by Playoff Rounds (4 = Finals)",
-       x = "Playoff Format") + 
+       x = "Playoff Format", y = "# of Upsets/Total # of Games Played") + 
   geom_text(data=upsets, aes(y = max_group, label = Group, vjust = -.75, col = Group), show.legend = FALSE) +
-  ylim(0,1.25) +
-  facet_wrap(~ Round)
+  facet_wrap(~ Round) + scale_y_continuous(limits = c(0,1.1), labels = scales::percent_format(), breaks = c(0,.25,.5,.75,1))
 
 #Upsets HSD Tests (Not separated by rounds)
 upsets1 <- data.frame(Count = upsets1) %>% mutate(., Format = "Current")
@@ -155,10 +156,11 @@ upsetsf <- upsetsf %>%
 ggplot(data = upsetsf, aes(x = Format, y = Count)) +
   geom_boxplot(aes(fill = Group), show.legend = FALSE) + 
   theme_minimal() + 
-  labs(title = "Number of Upsets (Lower Seed Beat Higher Seed)/Total Number of Games in the Round",
+  labs(title = "Percentage of Upsets (Lower Seed Beat Higher Seed)",
        subtitle = "Across All Rounds",
-       x = "Playoff Format") +
-  geom_text(data=upsetsf, aes(y = max_group, label = Group, vjust = -.75, col = Group), show.legend = FALSE)
+       x = "Playoff Format", y = "# of Upsets/Total # of Games Played") +
+  geom_text(data=upsetsf, aes(y = max_group, label = Group, vjust = -.75, col = Group), show.legend = FALSE) +
+  scale_y_continuous(limits = c(0,1.1), labels = scales::percent_format(), breaks = c(0,.25,.5,.75,1))
 
 
 
@@ -200,12 +202,11 @@ longSeries <- longSeries %>%
 ggplot(data = longSeries, aes(x = Format, y = Count)) +
   geom_boxplot(aes(fill = Group), show.legend = FALSE) + 
   theme_minimal() + 
-  labs(title = "Number of Long Series (6 and 7 Games)",
+  labs(title = "Percentage of Long Series (6 and 7 Games)",
        subtitle = "Separated by Playoff Rounds (4 = Finals)",
-       x = "Playoff Format") +
+       x = "Playoff Format", y = "# of Long Series/Total # of Series Played") +
   geom_text(data=longSeries, aes(y = max_group, label = Group, vjust = -.75, col = Group), show.legend = FALSE) +
-  ylim(0,10) +
-  facet_wrap(~ Round)
+  facet_wrap(~ Round) + scale_y_continuous(limits = c(0,1.1), labels = scales::percent_format(), breaks = c(0,.25,.5,.75,1))
 
 #longSeries HSD Tests (Not separated by rounds)
 longSeries1 <- data.frame(Count = longSeries1) %>% mutate(., Format = "Current")
@@ -215,19 +216,19 @@ longSeriesf <- rbind(longSeries1,longSeries2,longSeries3)
 lm.longSeriesf <- lm(Count ~ Format, data = longSeriesf)
 HSD.longSeriesf <- HSD.test(lm.longSeriesf, "Format"); HSD.longSeriesf$groups
 longSeriesf <- longSeriesf %>%
-  mutate(., Group = if_else(Format == "Current", HSD.longSeriesf$groups[3,2],
-                            if_else(Format == "8W8E", HSD.longSeriesf$groups[2,2], HSD.longSeriesf$groups[1,2])))
+  mutate(., Group = if_else(Format == "Current", HSD.longSeriesf$groups[2,2],
+                            if_else(Format == "8W8E", HSD.longSeriesf$groups[1,2], HSD.longSeriesf$groups[3,2]))) %>%
   group_by(Format) %>%
   arrange(., desc(Count)) %>%
-  mutate(., max_group = if_else(row_number()==1, Count, as.integer(NaN))) %>%
+  mutate(., max_group = if_else(row_number()==1, Count, NaN)) %>%
   ungroup(.)
 
 ggplot(data = longSeriesf, aes(x = Format, y = Count)) +
   geom_boxplot(aes(fill = Group), show.legend = FALSE) + 
   theme_minimal() + 
-  labs(title = "Number of Long Series (6 and 7 Games)",
+  labs(title = "Percentage of Long Series (6 and 7 Games)",
        subtitle = "Across All Rounds",
-       x = "Playoff Format") +
+       x = "Playoff Format", y = "# of Long Series/Total # of Series Played") +
   geom_text(data=longSeriesf, aes(y = max_group, label = Group, vjust = -.75, col = Group), show.legend = FALSE)
 
 
@@ -270,12 +271,11 @@ closeGames <- closeGames %>%
 ggplot(data = closeGames, aes(x = Format, y = Count)) +
   geom_boxplot(aes(fill = Group), show.legend = FALSE) + 
   theme_minimal() + 
-  labs(title = "Number of Close Games (Predicted Pts Diff < 3)",
+  labs(title = "Percentage of Close Games (Predicted Pts Diff < 3)",
        subtitle = "Separated by Playoff Rounds (4 = Finals)",
-       x = "Playoff Format") +
+       x = "Playoff Format", y = "# of Close Games/Total # of Games Played") +
   geom_text(data=closeGames, aes(y = max_group, label = Group, vjust = -.75, col = Group), show.legend = FALSE) +
-  ylim(0,30) +
-  facet_wrap(~ Round)
+  facet_wrap(~ Round) + scale_y_continuous(limits = c(0,1.1), labels = scales::percent_format(), breaks = c(0,.25,.5,.75,1))
 
 #longSeries HSD Tests (Not separated by rounds)
 closeGames1 <- data.frame(Count = closeGames1) %>% mutate(., Format = "Current")
@@ -295,10 +295,11 @@ closeGamesf <- closeGamesf %>%
 ggplot(data = closeGamesf, aes(x = Format, y = Count)) +
   geom_boxplot(aes(fill = Group), show.legend = FALSE) + 
   theme_minimal() + 
-  labs(title = "Number of Close Games (Predicted Pts Diff < 3)",
+  labs(title = "Percentage of Close Games (Predicted Pts Diff < 3)",
        subtitle = "Across All Rounds",
-       x = "Playoff Format") +
-  geom_text(data=closeGamesf, aes(y = max_group, label = Group, vjust = -.75, col = Group), show.legend = FALSE)
+       x = "Playoff Format", y = "# of Close Games/Total # of Games Played") +
+  geom_text(data=closeGamesf, aes(y = max_group, label = Group, vjust = -.75, col = Group), show.legend = FALSE) +
+  scale_y_continuous(limits = c(0,1.1), labels = scales::percent_format(), breaks = c(0,.25,.5,.75,1))
 
 
 
