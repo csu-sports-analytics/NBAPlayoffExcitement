@@ -81,7 +81,7 @@ glm.spread.old <- glm(win ~ exp_pts_diff, data = games, family = "binomial")
 
 #Every series is best of 7 (2-2-1-1-1) so this will take the higher seed and give them
 #home court advantage
-gameSim <- function(high, low, game){
+gameSimOld <- function(high, low, game){
   #Higher seed is home
   if(isTRUE(game<3 | game == 5 | game == 7)){
     gamedf <- data.frame("Team" = high, "Opponent" = low, "Location" = "H", stringsAsFactors = F)
@@ -128,7 +128,7 @@ r1Sim16 <- function(r1){
     for(g in 1:7){
       #Continue loop until a team has 4 wins
       if(highW != 4 & lowW != 4){
-        outcome <- gameSim(high,low,g)
+        outcome <- gameSimOld(high,low,g)
         numGame <- numGame+1
         #If outcome of sim is true, high team won the game
         if(isTRUE(outcome[[1]] == TRUE)){
@@ -140,9 +140,9 @@ r1Sim16 <- function(r1){
         }
         round1$highW[s] <- highW
         round1$lowW[s] <- lowW
-        #If win prob is between .47 and .53 we can say there is a decent chance the game
+        #If win prob is between .48 and .52 we can say there is a decent chance the game
         #goes to OT
-        if(abs(outcome[[2]]-.5)<.03){
+        if(abs(outcome[[2]]-.5)<.02){
           numHighOT <- numHighOT+1
         }
         else{}
@@ -191,7 +191,7 @@ r2Sim16 <- function(r2){
     for(g in 1:7){
       #Continue loop until a team has 4 wins
       if(highW != 4 & lowW != 4){
-        outcome <- gameSim(high,low,g)
+        outcome <- gameSimOld(high,low,g)
         numGame <- numGame+1
         #If outcome of sim is true, high team won the game
         if(isTRUE(outcome[[1]] == TRUE)){
@@ -204,9 +204,9 @@ r2Sim16 <- function(r2){
         }
         round2$highW[s] <- highW
         round2$lowW[s] <- lowW
-        #If win prob is between .47 and .53 we can say there is a decent chance the game
+        #If win prob is between .48 and .52 we can say there is a decent chance the game
         #goes to OT
-        if(abs(outcome[[2]]-.5)<.03){
+        if(abs(outcome[[2]]-.5)<.02){
           numHighOT <- numHighOT+1
         }
         else{}
@@ -256,7 +256,7 @@ r3Sim16 <- function(r3){
     for(g in 1:7){
       #Continue loop until a team has 4 wins
       if(highW != 4 & lowW != 4){
-        outcome <- gameSim(high,low,g)
+        outcome <- gameSimOld(high,low,g)
         numGame <- numGame+1
         #If outcome of sim is true, high team won the game
         if(isTRUE(outcome[[1]] == TRUE)){
@@ -268,9 +268,9 @@ r3Sim16 <- function(r3){
         }
         round3$highW[s] <- highW
         round3$lowW[s] <- lowW
-        #If win prob is between .47 and .53 we can say there is a decent chance the game
+        #If win prob is between .48 and .52 we can say there is a decent chance the game
         #goes to OT
-        if(abs(outcome[[2]]-.5)<.03){
+        if(abs(outcome[[2]]-.5)<.02){
           numHighOT <- numHighOT+1
         }else{}
         # If predicted pts diff is less than 3, this is very close, one possession game
@@ -315,7 +315,7 @@ finalsSim16 <- function(finals){
   for(g in 1:7){
     #Continue loop until a team has 4 wins
     if(highW != 4 & lowW != 4){
-      outcome <- gameSim(high,low,g)
+      outcome <- gameSimOld(high,low,g)
       numGame <- numGame+1
       #If outcome of sim is true, high team won the game
       if(isTRUE(outcome[[1]] == TRUE)){
@@ -328,9 +328,9 @@ finalsSim16 <- function(finals){
       }
       finals_mu$highW[s] <- highW
       finals_mu$lowW[s] <- lowW
-      #If win prob is between .47 and .53 we can say there is a decent chance the game
+      #If win prob is between .48 and .52 we can say there is a decent chance the game
       #goes to OT
-      if(abs(outcome[[2]]-.5)<.03){
+      if(abs(outcome[[2]]-.5)<.02){
         numHighOT <- numHighOT+1
       }
       else{}
@@ -358,7 +358,7 @@ finalsSim16 <- function(finals){
 
 
 #Doing 20000 series simulations
-S <- 100
+S <- 20000
 playoffSim3 <- list()
 for(s in 1:S){
   #Gathering teams that would make the playoffs if the top 16 teams in the NBA were chosen

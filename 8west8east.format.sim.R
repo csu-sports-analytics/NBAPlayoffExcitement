@@ -59,9 +59,9 @@ r1Sim88 <- function(r1){
         }
         round1$highW[s] <- highW
         round1$lowW[s] <- lowW
-        #If win prob is between .47 and .53 we can say there is a decent chance the game
+        #If win prob is between .48 and .52 we can say there is a decent chance the game
         #goes to OT
-        if(abs(outcome[[2]]-.5)<.03){
+        if(abs(outcome[[2]]-.5)<.02){
           numHighOT <- numHighOT+1
         }
         else{}
@@ -123,9 +123,9 @@ r2Sim88 <- function(r2){
         }
         round2$highW[s] <- highW
         round2$lowW[s] <- lowW
-        #If win prob is between .47 and .53 we can say there is a decent chance the game
+        #If win prob is between .48 and .52 we can say there is a decent chance the game
         #goes to OT
-        if(abs(outcome[[2]]-.5)<.03){
+        if(abs(outcome[[2]]-.5)<.02){
           numHighOT <- numHighOT+1
         }
         else{}
@@ -187,9 +187,9 @@ r3Sim88 <- function(r3){
         }
         round3$highW[s] <- highW
         round3$lowW[s] <- lowW
-        #If win prob is between .47 and .53 we can say there is a decent chance the game
+        #If win prob is between .48 and .52 we can say there is a decent chance the game
         #goes to OT
-        if(abs(outcome[[2]]-.5)<.03){
+        if(abs(outcome[[2]]-.5)<.02){
           numHighOT <- numHighOT+1
         }else{}
         # If predicted pts diff is less than 3, this is very close, one possession game
@@ -247,9 +247,9 @@ finalsSim88 <- function(finals){
       }
       finals_mu$highW[s] <- highW
       finals_mu$lowW[s] <- lowW
-      #If win prob is between .47 and .53 we can say there is a decent chance the game
+      #If win prob is between .48 and .52 we can say there is a decent chance the game
       #goes to OT
-      if(abs(outcome[[2]]-.5)<.03){
+      if(abs(outcome[[2]]-.5)<.02){
         numHighOT <- numHighOT+1
       }
       else{}
@@ -279,7 +279,7 @@ finalsSim88 <- function(finals){
 
 
 #Doing 20000 series simulations
-S <- 100
+S <- 20000
 playoffSim2 <- list()
 for(s in 1:S){
   #Gathering teams that would make the playoffs if the season ended on March 11, 2020

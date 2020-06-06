@@ -81,7 +81,7 @@ games$win <- ifelse(games$PtsDiff > 0,1,0)
 games$exp_pts_diff <- predict(lm.nba.old, newdata = games)
 glm.spread.old <- glm(win ~ exp_pts_diff, data = games, family = "binomial")
 
-
+#Updating gameSim to use 2017/18 model alongside gameSimOld
 gameSim <- function(high, low, game){
   #Higher seed is home
   if(isTRUE(game<3 | game == 5 | game == 7)){
@@ -115,7 +115,7 @@ teams1718 <- data.frame("Seed" = 1:16,
 
 ## Current Format
 #Doing 20000 series simulations
-S <- 100
+S <- 20000
 playoffSim1718Curr <- list()
 for(s in 1:S){
   #Gathering teams that would made the playoffs
@@ -351,7 +351,7 @@ ggplot(data = champsfreq1, aes(x = champs1, y = Freq)) + geom_bar(stat = "identi
 
 #8 West, 8 East Format
 #Doing 20000 series simulations
-S <- 100
+S <- 20000
 playoffSim17188W8E <- list()
 for(s in 1:S){
   #Gathering teams that made the playoffs
@@ -536,7 +536,7 @@ ggplot(data = champsfreq2, aes(x = champs2, y = Freq)) + geom_bar(stat = "identi
 
 
 #Doing 20000 series simulations
-S <- 100
+S <- 20000
 playoffSim171816 <- list()
 for(s in 1:S){
   #Gathering teams that would make the playoffs if the top 16 teams in the NBA were chosen
@@ -829,7 +829,7 @@ numClose$n <- numClose$n/numGames$n
 numUpset$n <- numUpset$n/numGames$n
 
 
-detach("package::operators", unload = TRUE)
+devtools::unload("operators")
 #Function that runs Tukey's HSD and gives data their groups
 tukey_label <- function(df, hsd){
   df$Group <- NA
@@ -882,7 +882,7 @@ ggplot(data = highOT, aes(x = Format, y = Count)) +
        x = "Playoff Format", y = "# of Games with High OT Prob/Total # of Games Played") +
   geom_text(data=highOT, aes(y = max_group, label = Group, vjust = -.75, col = Group), show.legend = FALSE) +
   facet_wrap(~ Round) + scale_y_continuous(limits = c(0,1.1), labels = scales::percent_format(), breaks = c(0,.25,.5,.75,1)) +
-  geom_hline(data = numUpset[1:4,], aes(yintercept = n), col = "red", linetype = "dashed")
+  geom_hline(data = numOT[1:4,], aes(yintercept = n), col = "red", linetype = "dashed")
 
 #High OT HSD Tests (Not separated by rounds)
 highOT1 <- data.frame(Count = highOT1) %>% mutate(., Format = "Current")
@@ -907,7 +907,7 @@ ggplot(data = highOTf, aes(x = Format, y = Count)) +
        x = "Playoff Format", y = "# of Games with High OT Prob/Total # of Games Played") +
   geom_text(data=highOTf, aes(y = max_group, label = Group, vjust = -.75, col = Group), show.legend = FALSE) +
   scale_y_continuous(limits = c(0,1.1), labels = scales::percent_format(), breaks = c(0,.25,.5,.75,1))+
-  geom_hline(data = numUpset[5,], aes(yintercept = n), col = "red", linetype = "dashed")
+  geom_hline(data = numOT[5,], aes(yintercept = n), col = "red", linetype = "dashed")
 
 
 
@@ -1023,7 +1023,7 @@ ggplot(data = longSeries, aes(x = Format, y = Count)) +
        x = "Playoff Format", y = "# of Long Series/Total # of Series Played") +
   geom_text(data=longSeries, aes(y = max_group, label = Group, vjust = -.75, col = Group), show.legend = FALSE) +
   facet_wrap(~ Round) + scale_y_continuous(limits = c(0,1.1), labels = scales::percent_format(), breaks = c(0,.25,.5,.75,1)) +
-  geom_hline(data = numUpset[1:4,], aes(yintercept = n), col = "red", linetype = "dashed")
+  geom_hline(data = numLongSeries[1:4,], aes(yintercept = n), col = "red", linetype = "dashed")
 
 #longSeries HSD Tests (Not separated by rounds)
 longSeries1 <- data.frame(Count = longSeries1) %>% mutate(., Format = "Current")
@@ -1047,7 +1047,7 @@ ggplot(data = longSeriesf, aes(x = Format, y = Count)) +
        subtitle = "Across All Rounds",
        x = "Playoff Format", y = "# of Long Series/Total # of Series Played") +
   geom_text(data=longSeriesf, aes(y = max_group, label = Group, vjust = -.75, col = Group), show.legend = FALSE) +
-  geom_hline(data = numUpset[5,], aes(yintercept = n), col = "red", linetype = "dashed")
+  geom_hline(data = numLongSeries[5,], aes(yintercept = n), col = "red", linetype = "dashed")
 
 
 
@@ -1091,7 +1091,7 @@ ggplot(data = closeGames, aes(x = Format, y = Count)) +
        x = "Playoff Format", y = "# of Close Games/Total # of Games Played") +
   geom_text(data=closeGames, aes(y = max_group, label = Group, vjust = -.75, col = Group), show.legend = FALSE) +
   facet_wrap(~ Round) + scale_y_continuous(limits = c(0,1.1), labels = scales::percent_format(), breaks = c(0,.25,.5,.75,1)) +
-  geom_hline(data = numUpset[1:4,], aes(yintercept = n), col = "red", linetype = "dashed")
+  geom_hline(data = numClose[1:4,], aes(yintercept = n), col = "red", linetype = "dashed")
 
 #longSeries HSD Tests (Not separated by rounds)
 closeGames1 <- data.frame(Count = closeGames1) %>% mutate(., Format = "Current")
@@ -1116,7 +1116,7 @@ ggplot(data = closeGamesf, aes(x = Format, y = Count)) +
        x = "Playoff Format", y = "# of Close Games/Total # of Games Played") +
   geom_text(data=closeGamesf, aes(y = max_group, label = Group, vjust = -.75, col = Group), show.legend = FALSE) +
   scale_y_continuous(limits = c(0,1.1), labels = scales::percent_format(), breaks = c(0,.25,.5,.75,1)) +
-  geom_hline(data = numUpset[5,], aes(yintercept = n), col = "red", linetype = "dashed")
+  geom_hline(data = numClose[5,], aes(yintercept = n), col = "red", linetype = "dashed")
 
 
 

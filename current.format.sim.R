@@ -61,9 +61,9 @@ r1SimCurr <- function(r1){
         }
         west1$highW[s] <- highW
         west1$lowW[s] <- lowW
-        #If win prob is between .47 and .52 we can say there is a decent chance the game
+        #If win prob is between .48 and .52 we can say there is a decent chance the game
         #goes to OT
-        if(abs(outcome[[2]]-.5)<.03){
+        if(abs(outcome[[2]]-.5)<.02){
           numHighOT <- numHighOT+1
         }
         else{}
@@ -114,9 +114,9 @@ r1SimCurr <- function(r1){
         }
         east1$highW[s] <- highW
         east1$lowW[s] <- lowW
-        #If win prob is between .47 and .53 we can say there is a decent chance the game
+        #If win prob is between .48 and .52 we can say there is a decent chance the game
         #goes to OT
-        if(isTRUE(abs(outcome[[2]]-.5)<.03)){
+        if(isTRUE(abs(outcome[[2]]-.5)<.02)){
           numHighOT <- numHighOT+1
         }
         else{}
@@ -179,9 +179,9 @@ r2SimCurr <- function(r2){
         }
         west2$highW[s] <- highW
         west2$lowW[s] <- lowW
-        #If win prob is between .47 and .53 we can say there is a decent chance the game
+        #If win prob is between .48 and .52 we can say there is a decent chance the game
         #goes to OT
-        if(abs(outcome[[2]]-.5)<.03){
+        if(abs(outcome[[2]]-.5)<.02){
           numHighOT <- numHighOT+1
         }
         else{}
@@ -232,9 +232,9 @@ r2SimCurr <- function(r2){
         }
         east2$highW[s] <- highW
         east2$lowW[s] <- lowW
-        #If win prob is between .47 and .53 we can say there is a decent chance the game
+        #If win prob is between .48 and .52 we can say there is a decent chance the game
         #goes to OT
-        if(abs(outcome[[2]]-.5)<.03){
+        if(abs(outcome[[2]]-.5)<.02){
           numHighOT <- numHighOT+1
         }
         else{}
@@ -296,9 +296,9 @@ r3SimCurr <- function(r3){
       }
       west3$highW[s] <- highW
       west3$lowW[s] <- lowW
-      #If win prob is between .47 and .53 we can say there is a decent chance the game
+      #If win prob is between .48 and .52 we can say there is a decent chance the game
       #goes to OT
-      if(abs(outcome[[2]]-.5)<.03){
+      if(abs(outcome[[2]]-.5)<.02){
         numHighOT <- numHighOT+1
       }else{}
       # If predicted pts diff is less than 3, this is very close, one possession game
@@ -345,9 +345,9 @@ r3SimCurr <- function(r3){
       }
       east3$highW[s] <- highW
       east3$lowW[s] <- lowW
-      #If win prob is between .47 and .53 we can say there is a decent chance the game
+      #If win prob is between .48 and .52 we can say there is a decent chance the game
       #goes to OT
-      if(abs(outcome[[2]]-.5)<.03){
+      if(abs(outcome[[2]]-.5)<.02){
         numHighOT <- numHighOT+1
       }
       else{}
@@ -407,9 +407,9 @@ finalsSimCurr <- function(finals){
       }
       finals_mu$highW[s] <- highW
       finals_mu$lowW[s] <- lowW
-      #If win prob is between .47 and .53 we can say there is a decent chance the game
+      #If win prob is between .48 and .52 we can say there is a decent chance the game
       #goes to OT
-      if(abs(outcome[[2]]-.5)<.03){
+      if(abs(outcome[[2]]-.5)<.02){
         numHighOT <- numHighOT+1
       }
       else{}
@@ -439,7 +439,7 @@ finalsSimCurr <- function(finals){
 
 
 #Doing 20000 series simulations
-S <- 100
+S <- 20000
 playoffSim1 <- list()
 for(s in 1:S){
   #Gathering teams that would make the playoffs if the season ended on March 11, 2020
