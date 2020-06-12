@@ -1,4 +1,3 @@
-
 #Every series is best of 7 (2-2-1-1-1) so this will take the higher seed and give them
 #home court advantage
 gameSim <- function(high, low, game){
@@ -66,7 +65,6 @@ r1SimCurr <- function(r1){
         if(abs(outcome[[2]]-.5)<.02){
           numHighOT <- numHighOT+1
         }
-        else{}
         # If predicted pts diff is less than 3, this is very close, one possession game
         # that is likely going down to the wire
         if(abs(outcome[[3]])<3){

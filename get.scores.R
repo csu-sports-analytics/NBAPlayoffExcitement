@@ -7,7 +7,6 @@ library(tidyverse)
 install.packages("stringr")
 library(stringr)
 install.packages("teamcolors")
-
 #Using data from the 2018/19 and 2019/20 seasons
 years <- c(2019:2020)
 
@@ -50,9 +49,6 @@ games <- games %>%
   mutate(PtsDiff = TeamPts-OppPts)
 
 allTeams = unique(games$Team)[1:30]
-
-
-
 
 
 

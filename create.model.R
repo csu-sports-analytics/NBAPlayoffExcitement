@@ -41,7 +41,10 @@ lm.nba <- lm(PtsDiff ~ Team + Opponent + Location,
 games <- games %>%
   select(., Team, Opponent, PtsDiff, Location)
 games$win <- ifelse(games$PtsDiff > 0,1,0)
-games$exp_pts_diff <- predict(lm.nba, newdata = games)
+ptdiff_vals <- predict(lm.nba, newdata = games, se.fit = TRUE)
+for(i in 1:nrow(games)){
+  games$exp_pts_diff[i] <- round(rnorm(1,ptdiff_vals$fit[i],ptdiff_vals$se.fit[i]))
+}
 glm.spread <- glm(win ~ exp_pts_diff, data = games, family = "binomial")
 
 #With Elo
@@ -55,13 +58,16 @@ qqnorm(lm.nba$residuals)
 qqline(lm.nba$residuals)
 plot(lm.nba$residuals ~ lm.nba$fitted.values)
 
+
+
 # #Testing model against actual game results
 # model_games <- games %>%
-#   select(., Team, Opponent,Location)
+#   select(., Team, Opponent,Location,PtsDiff)
 # model_games$win = ifelse(games$PtsDiff > 0,1,0)
 # model_games$exp_pts_diff <- as.numeric(as.character(unlist(predict.lm(lm.nba, newdata = model_games, se.fit = TRUE, type = "response")[[1]])))
 # glm.spread <- glm(win ~ exp_pts_diff, data = model_games, family = "binomial")
 # model_games$wlprob <- predict.glm(glm.spread, newdata = model_games, type = "response")
+
 
 # model_game_SE <- as.numeric(as.character(unlist(predict.lm(lm.nba, newdata = model_games, se.fit = TRUE, type = "response")[2])))
 # model_game_Pts <- rep(NA, nrow(model_games))
@@ -86,3 +92,4 @@ plot(lm.nba$residuals ~ lm.nba$fitted.values)
 #   }
 # }
 
+mean(games$exp_pts_diff > 0 & games$win == 1) + mean(games$exp_pts_diff < 0 & games$win == 0)

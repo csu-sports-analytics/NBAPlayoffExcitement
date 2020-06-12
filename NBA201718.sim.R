@@ -78,10 +78,10 @@ lm.nba.old <- lm(PtsDiff ~ Team + Opponent + Location,
 games <- games %>%
   select(., Team, Opponent, PtsDiff, Location)
 games$win <- ifelse(games$PtsDiff > 0,1,0)
-games$exp_pts_diff <- predict(lm.nba.old, newdata = games)
+games$exp_pts_diff <- predict(lm.nba.old, newdata = games, type = "response")
 glm.spread.old <- glm(win ~ exp_pts_diff, data = games, family = "binomial")
 
-#Updating gameSim to use 2017/18 model alongside gameSimOld
+#Updating gameSim to use 2017/18 model alongside gameSim
 gameSim <- function(high, low, game){
   #Higher seed is home
   if(isTRUE(game<3 | game == 5 | game == 7)){
@@ -115,7 +115,7 @@ teams1718 <- data.frame("Seed" = 1:16,
 
 ## Current Format
 #Doing 20000 series simulations
-S <- 20000
+S <- 100
 playoffSim1718Curr <- list()
 for(s in 1:S){
   #Gathering teams that would made the playoffs
@@ -330,6 +330,7 @@ champsfreq1 <- data.frame(table(champs1))
 
 #Getting colors of teams for plot
 library(teamcolors)
+allTeams <- unique(games$Team)
 champscol1 <- intersect(allTeams, champsfreq1$champs1)
 primcolors1 <- gather(data.frame(lapply(sort(champscol1), team_pal))[1,])$value
 
@@ -351,7 +352,7 @@ ggplot(data = champsfreq1, aes(x = champs1, y = Freq)) + geom_bar(stat = "identi
 
 #8 West, 8 East Format
 #Doing 20000 series simulations
-S <- 20000
+S <- 100
 playoffSim17188W8E <- list()
 for(s in 1:S){
   #Gathering teams that made the playoffs
@@ -536,7 +537,7 @@ ggplot(data = champsfreq2, aes(x = champs2, y = Freq)) + geom_bar(stat = "identi
 
 
 #Doing 20000 series simulations
-S <- 20000
+S <- 100
 playoffSim171816 <- list()
 for(s in 1:S){
   #Gathering teams that would make the playoffs if the top 16 teams in the NBA were chosen
@@ -864,6 +865,7 @@ highOT <- rbind(highOT1r1,highOT1r2,highOT1r3,highOT1r4,
                 highOT3r1,highOT3r2,highOT3r3,highOT3r4)
 
 #High OT HSD Tests (Separated by rounds)
+library(agricolae)
 lm.OT <- lm(Count ~ Format + Round, data = highOT)
 HSD.OT <- HSD.test(lm.OT, c("Format", "Round")); HSD.OT$groups
 highOT <- tukey_label(highOT, HSD.OT)
@@ -1120,7 +1122,47 @@ ggplot(data = closeGamesf, aes(x = Format, y = Count)) +
 
 
 
+#Just exploring the values that expected points differences take on
+closeTestInd <- which(abs(real1718$VisPts-real1718$HomePts)<=3)
+closeTest <- data.frame(high = rep(NA,length(closeTestInd)), low = rep(NA,length(closeTestInd)), game = rep(NA,length(closeTestInd)))
+for(i in 1:length(closeTestInd)){
+  ind <- closeTestInd[i]
+  home <- real1718$Home[ind]
+  vis <- real1718$Vis[ind]
+  if(isTRUE(real1718$HomeSeed[ind] > real1718$VisSeed[ind])){
+    closeTest$high[i] <- vis
+    closeTest$low[i] <- home
+    closeTest$game[i] <- 3
+  }
+  else{
+    closeTest$high[i] <- home
+    closeTest$low[i] <- vis
+    closeTest$game[i] <- 1
+  }
+}
+real1718[closeTestInd,]
+summary(abs(gameSim(closeTest$high, closeTest$low, closeTest$game)[23:33]))
 
 
 
 
+closeTest2 <- data.frame(high = rep(NA,82), low = rep(NA,82), game = rep(NA,82))
+for(i in 1:82){
+  home <- real1718$Home[i]
+  vis <- real1718$Vis[i]
+  if(isTRUE(real1718$HomeSeed[i] > real1718$VisSeed[i])){
+    closeTest2$high[i] <- vis
+    closeTest2$low[i] <- home
+    closeTest2$game[i] <- 3
+  }
+  else{
+    closeTest2$high[i] <- home
+    closeTest2$low[i] <- vis
+    closeTest2$game[i] <- 1
+  }
+}
+summary(abs(gameSim(closeTest2$high, closeTest2$low, closeTest2$game)[165:246]))
+unique(sort(abs(gameSim(closeTest2$high, closeTest2$low, closeTest2$game)[165:246])))
+sum(abs(gameSim(closeTest2$high, closeTest2$low, closeTest2$game)[165:246])<= 3)
+closeTest2[1,3]
+gameSim(closeTest2[2,1], closeTest2[2,2], closeTest2[2,3])
