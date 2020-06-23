@@ -51,9 +51,31 @@ games <- games %>%
 allTeams = unique(games$Team)[1:30]
 
 
+for(y in 2017:2020){
+  url <- paste0("https://www.basketball-reference.com/leagues/NBA_",y,"_standings.html")
+  url_new <- getURL(url)
+  assign(paste0("East_",y), data.frame(readHTMLTable(url_new)[1]))
+  assign(paste0("West_",y), data.frame(readHTMLTable(url_new)[2]))
+}
 
 
-
+cleanConf <- function(East, West){
+  colnames(East) <- c("Team","W", "L","WL","GB","PS","PA","SRS")
+  colnames(West) <- c("Team","W", "L","WL","GB","PS","PA","SRS")
+  Conf <- rbind(East, West)
+  Conf[,1] <- gsub('\\*.*', '',Conf[,1])
+  Conf[,1] <- gsub('\\(.*', '',Conf[,1])
+  Conf[,1] <- str_trim(Conf[,1])
+  Conf[,2:8] <- as.numeric(as.character(unlist(Conf[,2:8])))
+  Conf$GB <- ifelse(is.na(Conf$GB),0,Conf$GB)
+  Conf <- arrange(Conf, desc(WL))
+  Conf$Seed <- as.factor(1:30)
+  return(Conf)
+}
+ConfStand_2017 <- cleanConf(East_2017, West_2017)
+ConfStand_2018 <- cleanConf(East_2018, West_2018)
+ConfStand_2019 <- cleanConf(East_2019, West_2019)
+ConfStand_2020 <- cleanConf(East_2020, West_2020)
 
 
 
@@ -77,3 +99,4 @@ allTeams = unique(games$Team)[1:30]
 #   games$TeamElo[i] <- elo_table$`Current rating`[which(word(elo_table$Team,-1) == word(games$Team[i],-1))]
 #   games$OpponentElo[i] <- elo_table$`Current rating`[which(word(elo_table$Team,-1) == word(games$Opponent[i],-1))]
 # }
+

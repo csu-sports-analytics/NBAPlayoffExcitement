@@ -1,5 +1,9 @@
+library(RCurl)
+library(XML)
+library(tidyverse)
 #Must get scores from 2016/17 and 2017/18 because this is the last time this
 #scenario would be applicable
+set.seed(100)
 
 #Using data from the 2016/17 and 2017/18 seasons
 years <- c(2017:2018)
@@ -7,7 +11,7 @@ years <- c(2017:2018)
 #Creating complete schedule
 games <- data.frame()
 
-
+#### Scraping the providing years season data ####
 for(i in 1:length(years)){
   #Establishing which months in each other years NBA games were played
   if(years[i]==2017){
@@ -37,7 +41,7 @@ for(i in 1:length(years)){
     games <- rbind(games,month_sched)
   }
 }
-
+games <- games[-c(which(is.na(games$Team))),]
 teams <- unique(games$Team)[1:30]
 
 #Adding PtsDiff to games
@@ -46,39 +50,47 @@ games <- games %>%
 
 #Days since the game for weights for model (relative to when playoffs started in 2018)
 games$DaysSince <- as.numeric(as.Date("2018-4-14")-games$Date)
+
 #Which season the game was in, also for weighting model
 #1 if 2016/17, 3 if 2017/28 so that games from this season are weighted heavier
 #but last season is still accounted for
 games <- games %>%
   mutate(Season = if_else(Date < as.Date("2017-10-16"), as.numeric(1), as.numeric(3)))
+
 #Weight games based on how long ago they were
 games <- games %>%
   mutate(., Game_Weight = games$Season*exp(-games$DaysSince/games$DaysSince[1]))
+
 #Adding "H" for location
 games <- games %>%
   mutate(., Location = "H")
+
 #Cleaning data
 games <- games %>%
   select(., Team, Opponent, PtsDiff, Location, Game_Weight)
+
 #Adding games from away teams' perspectives
 games_away <- games %>%
   select(., Opponent, Team, PtsDiff, Location, Game_Weight) %>%
+  #Inverting PtsDiff
   mutate(., PtsDiff = -1*PtsDiff) %>%
+  #Changing Location from H to A
   mutate(., Location = "A")
+#Renaming columns
 names(games_away)=c("Team", "Opponent", "PtsDiff", "Location", "Game_Weight")
+#Combine home and away
 games <- rbind(games, games_away)
 
-
 #Making linear model to predict team score
-lm.nba.old <- lm(PtsDiff ~ Team + Opponent + Location, 
+lm.nba.old <- lm(PtsDiff ~ Team:Opponent + Location,
                  data = games,
                  weights = Game_Weight)
 
+#Getting expected scores for each game
+games$exp_pts_diff <- predict(lm.nba.old, newdata = games, type = "response") 
+
 #GLM to find prob of winning giving expected points spread
-games <- games %>%
-  select(., Team, Opponent, PtsDiff, Location)
 games$win <- ifelse(games$PtsDiff > 0,1,0)
-games$exp_pts_diff <- predict(lm.nba.old, newdata = games, type = "response")
 glm.spread.old <- glm(win ~ exp_pts_diff, data = games, family = "binomial")
 
 #Updating gameSim to use 2017/18 model alongside gameSim
@@ -91,10 +103,10 @@ gameSim <- function(high, low, game){
     gamedf <- data.frame("Team" = high, "Opponent" = low, "Location" = "A", stringsAsFactors = F)
   }
   #Predicting game points difference
-  gamedf$exp_pts_diff <- as.numeric(as.character(unlist(predict.lm(lm.nba.old, newdata = gamedf, se.fit = TRUE, type = "response")[[1]])))
-  
+  gamedf$exp_pts_diff <- as.numeric(predict(lm.nba.old, newdata = gamedf, type = "response")[[1]])
+    
   #Odds of points high seed winning given pts diff
-  win_prob <- predict.glm(glm.spread.old, newdata = gamedf, type = "response")
+  win_prob <- predict.glm(glm.spread.old, newdata = gamedf, type = "response")[[1]]
   
   #Returns TRUE or FALSE based on win probability
   #If TRUE, the higher seed won, if FALSE, the lower seed won
@@ -113,9 +125,9 @@ teams1718 <- data.frame("Seed" = 1:16,
            stringsAsFactors = FALSE)
 
 
-## Current Format
+#### Current Format ####
 #Doing 20000 series simulations
-S <- 100
+S <- 20000
 playoffSim1718Curr <- list()
 for(s in 1:S){
   #Gathering teams that would made the playoffs
@@ -298,7 +310,6 @@ for(i in 1:length(upsetIndex1)){
   s <- s + 1
 }
 
-
 #Number of series that went to 6 or 7 games
 longSeries1 <- rep(NA,length(upsetIndex1))
 s <- 1
@@ -326,7 +337,7 @@ for(i in 1:S){
   champs1[i] <- playoffSim1718Curr[[champIndex1]]
 }
 champs1 <- data.frame(champs1)
-champsfreq1 <- data.frame(table(champs1))
+champsfreq1 <- data.frame(table(champs1)) %>% arrange(desc(Freq))
 
 #Getting colors of teams for plot
 library(teamcolors)
@@ -335,24 +346,9 @@ champscol1 <- intersect(allTeams, champsfreq1$champs1)
 primcolors1 <- gather(data.frame(lapply(sort(champscol1), team_pal))[1,])$value
 
 
-# Current format champions plot
-ggplot(data = champsfreq1, aes(x = champs1, y = Freq)) + geom_bar(stat = "identity", aes(fill = champs1)) + 
-  theme_minimal() + theme(axis.text.x = element_text(angle = 90), legend.position = "none") + 
-  scale_fill_manual(values = primcolors1) + geom_text(aes(label=Freq, vjust = -.25))+
-  labs(title = "Frequency of Simulated Championships (20,000 sims)", x = "Team", y = "Frequency", subtitle = "Current Playoff Format for 2017/18 Season")
-
-
-
-
-
-
-
-
-
-
-#8 West, 8 East Format
+#### 8 West, 8 East Format ####
 #Doing 20000 series simulations
-S <- 100
+S <- 20000
 playoffSim17188W8E <- list()
 for(s in 1:S){
   #Gathering teams that made the playoffs
@@ -459,10 +455,6 @@ for(s in 1:S){
   playoffSim17188W8E <- c(playoffSim17188W8E,finals_mu,finalsresults[5],finalsresults[6],finalsresults[7],finalsresults[8],finalsresults[9])
 }
 
-
-
-
-
 #Figuring out the indexing for highOTprob series, upsets, number of 6/7 game series and close games
 upsetIndex2 <- rep(NA,(4*S))
 s <- 1
@@ -525,19 +517,11 @@ champsfreq2 <- data.frame(table(champs2))
 library(teamcolors)
 champscol2 <- intersect(allTeams, champsfreq2$champs2)
 primcolors2 <- gather(data.frame(lapply(sort(champscol2), team_pal))[1,])$value
-# 8 West, 8 East
-ggplot(data = champsfreq2, aes(x = champs2, y = Freq)) + geom_bar(stat = "identity", aes(fill = champs2)) + 
-  theme_minimal() + theme(axis.text.x = element_text(angle = 90), legend.position = "none") + 
-  scale_fill_manual(values = primcolors2) + geom_text(aes(label=Freq, vjust = -.25))+
-  labs(title = "Frequency of Simulated Championships (20,000 sims)", x = "Team", y = "Frequency", subtitle = "8 West and 8 East, Conference-less Playoff Format  for 2017/18 Season")
 
 
-
-
-
-
+#### 16 TOT Format ####
 #Doing 20000 series simulations
-S <- 100
+S <- 20000
 playoffSim171816 <- list()
 for(s in 1:S){
   #Gathering teams that would make the playoffs if the top 16 teams in the NBA were chosen
@@ -645,8 +629,6 @@ for(s in 1:S){
 }
 
 
-
-
 #Figuring out the indexing for highOTprob series, upsets, number of 6/7 game series and close games
 upsetIndex3 <- rep(NA,(4*S))
 s <- 1
@@ -706,463 +688,413 @@ champs3 <- data.frame(champs3)
 champsfreq3 <- data.frame(table(champs3))
 
 #Getting colors of teams for plot
-library(teamcolors)
 champscol3 <- intersect(allTeams, champsfreq3$champs3)
 primcolors3 <- gather(data.frame(lapply(sort(champscol3), team_pal))[1,])$value
 
-# 16 team
-ggplot(data = champsfreq3, aes(x = champs3, y = Freq)) + geom_bar(stat = "identity", aes(fill = champs3)) + 
-  theme_minimal() + theme(axis.text.x = element_text(angle = 90), legend.position = "none") + 
-  scale_fill_manual(values = primcolors3) + geom_text(aes(label=Freq, vjust = -.25))+
-  labs(title = "Frequency of Simulated Championships (20,000 sims)", x = "Team", y = "Frequency", subtitle = "16 Total Teams, Conference-less Playoff Format for 2017/18 Season")
+
+
+
+
+
 
 
 #Scraping real results and creating dataframe with counts of events
-url <- getURL("https://www.basketball-reference.com/playoffs/NBA_2018_games.html")
-real1718 <- as.data.frame(readHTMLTable(url))
-real1718 <- real1718[,c(3,5,4,6,8)]
-colnames(real1718) <- c("Vis","Home","VisPts","HomePts","OT")
-#Creating unique series identifiers
-real1718 <- real1718 %>%
-  unite(series, 1:2, remove=FALSE)
-real1718$series <- real1718$series %>% 
-  str_split(., '_') %>% 
-  lapply(., 'sort') %>%  
-  lapply(., 'paste', collapse=' ') %>% 
-  unlist(.)
-
-real1718$Vis <- as.character(real1718$Vis)
-real1718$Home <- as.character(real1718$Home)
-real1718$VisPts <- as.numeric(as.character(real1718$VisPts))
-real1718$HomePts <- as.numeric(as.character(real1718$HomePts))
-real1718$OT <- as.character(real1718$OT)
-
-install.packages("operators")
-library(operators)
-seriesTracker <- NA
-for(i in 1:nrow(real1718)){
-  if(isTRUE(real1718$series[i] %!in% seriesTracker)){
-    seriesTracker <- c(seriesTracker, real1718$series[i])
-  }
-  else{}
-}
-seriesTracker <- na.omit(seriesTracker)[1:15]
-Round <- c(rep(1,8),rep(2,4),rep(3,2),4)
-seriesTracker <- as.data.frame(cbind(seriesTracker,Round))
-seriesTracker$seriesTracker <- as.character(seriesTracker$seriesTracker)
-seriesTracker$Round <- as.integer(seriesTracker$Round)
-for(i in 1:nrow(real1718)){
-  real1718$Round[i] <- seriesTracker$Round[which(seriesTracker$seriesTracker == real1718$series[i])]
-}
-
-
-#Getting number of games in each round
-numGames <- count(real1718, Round)
-numGames <- rbind(numGames, nrow(real1718)); numGames$Round[5] <- "Tot"
-
-#Number of OT's in each round
-numOT <- as.data.frame(count(real1718, Round, OT))
-numOT$OT <- as.character(numOT$OT)
-numOT <- filter(numOT, OT == "OT")
-numOT <- numOT[,c(1,3)]
-numOT <- rbind(numOT,c(NA,0),c(NA,0))
-numOT$Round[c(4,5)] <- c("3","Tot")
-numOT$n[5] <- sum(numOT$n)
-numOT <- arrange(numOT, Round)
-
-#Getting number of long series in each round
-seriesGames <- as.data.frame(count(real1718, series))
-Round <- rep(NA,15)
-seriesGames <- cbind(seriesGames, Round)
-for(i in 1:15){
-  seriesGames$Round[i] <- as.integer(seriesTracker$Round[which(seriesGames$series[i]==seriesTracker$seriesTracker)])
-}
-numLongSeries <- data.frame(c(1:4, "Tot"),rep(0,5))
-colnames(numLongSeries) <- c("Round", "n")
-for(i in 1:4){
-  for(j in 1:15){
-    if(isTRUE(numLongSeries$Round[i]==seriesGames$Round[j] & seriesGames$n[j] > 5)){
-      numLongSeries$n[i] <- numLongSeries$n[i] + 1
-      numLongSeries$n[5] <- numLongSeries$n[5] + 1
-    }else{}
-  }
-}
-
-#Getting Number of Close Games
-numClose <- data.frame(c(1:4, "Tot"),rep(0,5))
-colnames(numClose) <- c("Round", "n")
-closeInd <- which(abs(real1718$VisPts-real1718$HomePts) <= 3)
-numClose$n[5] <- length(closeInd)
-for(i in 1:length(closeInd)){
-  j <- closeInd[i]
-  numClose$n[real1718$Round[j]] <- numClose$n[real1718$Round[j]] + 1
-}
-
-#Getting Number of Upsets
-VisSeed <- rep(0,nrow(real1718))
-HomeSeed <- rep(0, nrow(real1718))
-Upset <- rep(0,nrow(real1718))
-real1718 <- cbind(real1718,VisSeed,HomeSeed,Upset)
-for(i in 1:nrow(real1718)){
-  real1718$VisSeed[i] <- which(teams1718$Team == real1718$Vis[i])
-  real1718$HomeSeed[i] <- which(teams1718$Team == real1718$Home[i])
-  if(real1718$HomePts[i] > real1718$VisPts[i] & real1718$HomeSeed[i] > real1718$VisSeed[i]){
-    real1718$Upset[i] <- 1
-  }
-  else if(real1718$HomePts[i] < real1718$VisPts[i] & real1718$HomeSeed[i] < real1718$VisSeed[i]){
-    real1718$Upset[i] <- 1
-  }
-  else{}
-}
-numUpset <- data.frame(c(1:4, "Tot"),rep(0,5))
-colnames(numUpset) <- c("Round", "n")
-upsetInd <- which(real1718$Upset == 1)
-numUpset$n[5] <- length(upsetInd)
-for(i in 1:length(upsetInd)){
-  j <- upsetInd[i]
-  numUpset$n[real1718$Round[j]] <- numUpset$n[real1718$Round[j]] + 1
-}
-
-#Getting percentages
-numOT$n <- numOT$n/numGames$n
-numLongSeries$n <- numLongSeries$n/c(8,4,2,1,15)
-numClose$n <- numClose$n/numGames$n
-numUpset$n <- numUpset$n/numGames$n
-
-
-devtools::unload("operators")
-#Function that runs Tukey's HSD and gives data their groups
-tukey_label <- function(df, hsd){
-  df$Group <- NA
-  for(i in 1:nrow(hsd$groups)){
-    df$Group[which(rownames(hsd$groups)[i]==paste0(df$Format, ":",df$Round))] <- as.character(hsd$groups[i,2])
-  }
-  return(df)
-}
+# url <- getURL("https://www.basketball-reference.com/playoffs/NBA_2018_games.html")
+# real1718 <- as.data.frame(readHTMLTable(url))
+# real1718 <- real1718[,c(3,5,4,6,8)]
+# colnames(real1718) <- c("Vis","Home","VisPts","HomePts","OT")
+# #Creating unique series identifiers
+# real1718 <- real1718 %>%
+#   unite(series, 1:2, remove=FALSE)
+# real1718$series <- real1718$series %>% 
+#   str_split(., '_') %>% 
+#   lapply(., 'sort') %>%  
+#   lapply(., 'paste', collapse=' ') %>% 
+#   unlist(.)
+# 
+# real1718$Vis <- as.character(real1718$Vis)
+# real1718$Home <- as.character(real1718$Home)
+# real1718$VisPts <- as.numeric(as.character(real1718$VisPts))
+# real1718$HomePts <- as.numeric(as.character(real1718$HomePts))
+# real1718$OT <- as.character(real1718$OT)
+# 
+# install.packages("operators")
+# library(operators)
+# seriesTracker <- NA
+# for(i in 1:nrow(real1718)){
+#   if(isTRUE(real1718$series[i] %!in% seriesTracker)){
+#     seriesTracker <- c(seriesTracker, real1718$series[i])
+#   }
+#   else{}
+# }
+# seriesTracker <- na.omit(seriesTracker)[1:15]
+# Round <- c(rep(1,8),rep(2,4),rep(3,2),4)
+# seriesTracker <- as.data.frame(cbind(seriesTracker,Round))
+# seriesTracker$seriesTracker <- as.character(seriesTracker$seriesTracker)
+# seriesTracker$Round <- as.integer(seriesTracker$Round)
+# for(i in 1:nrow(real1718)){
+#   real1718$Round[i] <- seriesTracker$Round[which(seriesTracker$seriesTracker == real1718$series[i])]
+# }
+# 
+# 
+# #Getting number of games in each round
+# numGames <- count(real1718, Round)
+# numGames <- rbind(numGames, nrow(real1718)); numGames$Round[5] <- "Tot"
+# 
+# #Number of OT's in each round
+# numOT <- as.data.frame(count(real1718, Round, OT))
+# numOT$OT <- as.character(numOT$OT)
+# numOT <- filter(numOT, OT == "OT")
+# numOT <- numOT[,c(1,3)]
+# numOT <- rbind(numOT,c(NA,0),c(NA,0))
+# numOT$Round[c(4,5)] <- c("3","Tot")
+# numOT$n[5] <- sum(numOT$n)
+# numOT <- arrange(numOT, Round)
+# 
+# #Getting number of long series in each round
+# seriesGames <- as.data.frame(count(real1718, series))
+# Round <- rep(NA,15)
+# seriesGames <- cbind(seriesGames, Round)
+# for(i in 1:15){
+#   seriesGames$Round[i] <- as.integer(seriesTracker$Round[which(seriesGames$series[i]==seriesTracker$seriesTracker)])
+# }
+# numLongSeries <- data.frame(c(1:4, "Tot"),rep(0,5))
+# colnames(numLongSeries) <- c("Round", "n")
+# for(i in 1:4){
+#   for(j in 1:15){
+#     if(isTRUE(numLongSeries$Round[i]==seriesGames$Round[j] & seriesGames$n[j] > 5)){
+#       numLongSeries$n[i] <- numLongSeries$n[i] + 1
+#       numLongSeries$n[5] <- numLongSeries$n[5] + 1
+#     }else{}
+#   }
+# }
+# 
+# #Getting Number of Close Games
+# numClose <- data.frame(c(1:4, "Tot"),rep(0,5))
+# colnames(numClose) <- c("Round", "n")
+# closeInd <- which(abs(real1718$VisPts-real1718$HomePts) <= 3)
+# numClose$n[5] <- length(closeInd)
+# for(i in 1:length(closeInd)){
+#   j <- closeInd[i]
+#   numClose$n[real1718$Round[j]] <- numClose$n[real1718$Round[j]] + 1
+# }
+# 
+# #Getting Number of Upsets
+# VisSeed <- rep(0,nrow(real1718))
+# HomeSeed <- rep(0, nrow(real1718))
+# Upset <- rep(0,nrow(real1718))
+# real1718 <- cbind(real1718,VisSeed,HomeSeed,Upset)
+# for(i in 1:nrow(real1718)){
+#   real1718$VisSeed[i] <- which(teams1718$Team == real1718$Vis[i])
+#   real1718$HomeSeed[i] <- which(teams1718$Team == real1718$Home[i])
+#   if(real1718$HomePts[i] > real1718$VisPts[i] & real1718$HomeSeed[i] > real1718$VisSeed[i]){
+#     real1718$Upset[i] <- 1
+#   }
+#   else if(real1718$HomePts[i] < real1718$VisPts[i] & real1718$HomeSeed[i] < real1718$VisSeed[i]){
+#     real1718$Upset[i] <- 1
+#   }
+#   else{}
+# }
+# numUpset <- data.frame(c(1:4, "Tot"),rep(0,5))
+# colnames(numUpset) <- c("Round", "n")
+# upsetInd <- which(real1718$Upset == 1)
+# numUpset$n[5] <- length(upsetInd)
+# for(i in 1:length(upsetInd)){
+#   j <- upsetInd[i]
+#   numUpset$n[real1718$Round[j]] <- numUpset$n[real1718$Round[j]] + 1
+# }
+# 
+# #Getting percentages
+# numOT$n <- numOT$n/numGames$n
+# numLongSeries$n <- numLongSeries$n/c(8,4,2,1,15)
+# numClose$n <- numClose$n/numGames$n
+# numUpset$n <- numUpset$n/numGames$n
+# 
+# 
+# devtools::unload("operators")
 
 
 
 
-#High Overtime for by rounds
-#Round 1
-highOT1r1 <- data.frame(Count = highOT1[seq(1, length(highOT1), 4)]) %>% mutate(., Round = 1, Format = "Current")
-highOT2r1 <- data.frame(Count = highOT2[seq(1, length(highOT2), 4)]) %>% mutate(., Round = 1, Format = "8W, 8E")
-highOT3r1 <- data.frame(Count = highOT3[seq(1, length(highOT3), 4)]) %>% mutate(., Round = 1, Format = "16 TOT")
-#Round 2
-highOT1r2 <- data.frame(Count = highOT1[seq(2, length(highOT1), 4)]) %>% mutate(., Round = 2, Format = "Current")
-highOT2r2 <- data.frame(Count = highOT2[seq(2, length(highOT2), 4)]) %>% mutate(., Round = 2, Format = "8W, 8E")
-highOT3r2 <- data.frame(Count = highOT3[seq(2, length(highOT3), 4)]) %>% mutate(., Round = 2, Format = "16 TOT")
-#Round 3
-highOT1r3 <- data.frame(Count = highOT1[seq(3, length(highOT1), 4)]) %>% mutate(., Round = 3, Format = "Current")
-highOT2r3 <- data.frame(Count = highOT2[seq(3, length(highOT2), 4)]) %>% mutate(., Round = 3, Format = "8W, 8E")
-highOT3r3 <- data.frame(Count = highOT3[seq(3, length(highOT3), 4)]) %>% mutate(., Round = 3, Format = "16 TOT")
-#Finals
-highOT1r4 <- data.frame(Count = highOT1[seq(4, length(highOT1), 4)]) %>% mutate(., Round = 4, Format = "Current")
-highOT2r4 <- data.frame(Count = highOT2[seq(4, length(highOT2), 4)]) %>% mutate(., Round = 4, Format = "8W, 8E")
-highOT3r4 <- data.frame(Count = highOT3[seq(4, length(highOT3), 4)]) %>% mutate(., Round = 4, Format = "16 TOT")
-highOT <- rbind(highOT1r1,highOT1r2,highOT1r3,highOT1r4,
-                highOT2r1,highOT2r2,highOT2r3,highOT2r4,
-                highOT3r1,highOT3r2,highOT3r3,highOT3r4)
-
-#High OT HSD Tests (Separated by rounds)
-library(agricolae)
-lm.OT <- lm(Count ~ Format + Round, data = highOT)
-HSD.OT <- HSD.test(lm.OT, c("Format", "Round")); HSD.OT$groups
-highOT <- tukey_label(highOT, HSD.OT)
-highOT <- highOT %>%
-  mutate(., FR = paste0(Format,Round)) %>%
-  group_by(Format, Round) %>%
-  arrange(., desc(Count)) %>%
-  mutate(., max_group = if_else(row_number()==1, Count, NaN)) %>%
-  ungroup(.)
-
-ggplot(data = highOT, aes(x = Format, y = Count)) +
-  geom_boxplot(aes(fill = Group), show.legend = FALSE) + 
-  theme_minimal() + 
-  labs(title = "Percentage of Games With High Probability of Overtime",
-       subtitle = "Separated by Playoff Rounds (4 = Finals)",
-       x = "Playoff Format", y = "# of Games with High OT Prob/Total # of Games Played") +
-  geom_text(data=highOT, aes(y = max_group, label = Group, vjust = -.75, col = Group), show.legend = FALSE) +
-  facet_wrap(~ Round) + scale_y_continuous(limits = c(0,1.1), labels = scales::percent_format(), breaks = c(0,.25,.5,.75,1)) +
-  geom_hline(data = numOT[1:4,], aes(yintercept = n), col = "red", linetype = "dashed")
-
-#High OT HSD Tests (Not separated by rounds)
-highOT1 <- data.frame(Count = highOT1) %>% mutate(., Format = "Current")
-highOT2 <- data.frame(Count = highOT2) %>% mutate(., Format = "8W8E")
-highOT3 <- data.frame(Count = highOT3) %>% mutate(., Format = "16TOT")
-highOTf <- rbind(highOT1,highOT2,highOT3)
-lm.OTf <- lm(Count ~ Format, data = highOTf)
-HSD.OTf <- HSD.test(lm.OTf, "Format"); HSD.OTf$groups
-highOTf <- highOTf %>%
-  mutate(., Group = if_else(Format == "Current", HSD.OTf$groups[1,2],
-                            if_else(Format == "8W8E", HSD.OTf$groups[2,2], HSD.OTf$groups[3,2]))) %>%
-  group_by(Format) %>%
-  arrange(., desc(Count)) %>%
-  mutate(., max_group = if_else(row_number()==1, Count, NaN)) %>%
-  ungroup(.)
-
-ggplot(data = highOTf, aes(x = Format, y = Count)) +
-  geom_boxplot(aes(fill = Group), show.legend = FALSE) + 
-  theme_minimal() + 
-  labs(title = "Percentage of Games With High Probability of Overtime",
-       subtitle = "Across All Rounds",
-       x = "Playoff Format", y = "# of Games with High OT Prob/Total # of Games Played") +
-  geom_text(data=highOTf, aes(y = max_group, label = Group, vjust = -.75, col = Group), show.legend = FALSE) +
-  scale_y_continuous(limits = c(0,1.1), labels = scales::percent_format(), breaks = c(0,.25,.5,.75,1))+
-  geom_hline(data = numOT[5,], aes(yintercept = n), col = "red", linetype = "dashed")
-
-
-
-
-
-
-#Upset Ratio by rounds
-#Round 1
-upsets1r1 <- data.frame(Count = upsets1[seq(1, length(upsets1), 4)]) %>% mutate(., Round = 1, Format = "Current")
-upsets2r1 <- data.frame(Count = upsets2[seq(1, length(upsets2), 4)]) %>% mutate(., Round = 1, Format = "8W, 8E")
-upsets3r1 <- data.frame(Count = upsets3[seq(1, length(upsets3), 4)]) %>% mutate(., Round = 1, Format = "16 TOT")
-#Round 2
-upsets1r2 <- data.frame(Count = upsets1[seq(2, length(upsets1), 4)]) %>% mutate(., Round = 2, Format = "Current")
-upsets2r2 <- data.frame(Count = upsets2[seq(2, length(upsets2), 4)]) %>% mutate(., Round = 2, Format = "8W, 8E")
-upsets3r2 <- data.frame(Count = upsets3[seq(2, length(upsets3), 4)]) %>% mutate(., Round = 2, Format = "16 TOT")
-#Round 3
-upsets1r3 <- data.frame(Count = upsets1[seq(3, length(upsets1), 4)]) %>% mutate(., Round = 3, Format = "Current")
-upsets2r3 <- data.frame(Count = upsets2[seq(3, length(upsets2), 4)]) %>% mutate(., Round = 3, Format = "8W, 8E")
-upsets3r3 <- data.frame(Count = upsets3[seq(3, length(upsets3), 4)]) %>% mutate(., Round = 3, Format = "16 TOT")
-#Finals
-upsets1r4 <- data.frame(Count = upsets1[seq(4, length(upsets1), 4)]) %>% mutate(., Round = 4, Format = "Current")
-upsets2r4 <- data.frame(Count = upsets2[seq(4, length(upsets2), 4)]) %>% mutate(., Round = 4, Format = "8W, 8E")
-upsets3r4 <- data.frame(Count = upsets3[seq(4, length(upsets3), 4)]) %>% mutate(., Round = 4, Format = "16 TOT")
-upsets <- rbind(upsets1r1,upsets1r2,upsets1r3,upsets1r4,
-                upsets2r1,upsets2r2,upsets2r3,upsets2r4,
-                upsets3r1,upsets3r2,upsets3r3,upsets3r4)
-
-#Upsets HSD Tests (Separated by rounds)
-lm.upsets <- lm(Count ~ Format + Round, data = upsets)
-library(agricolae)
-HSD.upsets <- HSD.test(lm.upsets, c("Format", "Round")); HSD.upsets$groups
-upsets <- tukey_label(upsets, HSD.upsets)
-upsets <- upsets %>%
-  group_by(Format, Round) %>%
-  arrange(., desc(Count)) %>%
-  mutate(., max_group = if_else(row_number()==1, Count, NaN)) %>%
-  ungroup(.)
-
-ggplot(data = upsets, aes(x = Format, y = Count)) +
-  geom_boxplot(aes(fill = Group), show.legend = FALSE) + 
-  theme_minimal() + 
-  labs(title = "Percentage of Upsets (Lower Seed Beat Higher Seed)",
-       subtitle = "Separated by Playoff Rounds (4 = Finals)",
-       x = "Playoff Format", y = "# of Upsets/Total # of Games Played") + 
-  geom_text(data=upsets, aes(y = max_group, label = Group, vjust = -.75, col = Group), show.legend = FALSE) +
-  facet_wrap(~ Round) + scale_y_continuous(limits = c(0,1.1), labels = scales::percent_format(), breaks = c(0,.25,.5,.75,1)) +
-  geom_hline(data = numUpset[1:4,], aes(yintercept = n), col = "red", linetype = "dashed")
-
-#Upsets HSD Tests (Not separated by rounds)
-upsets1 <- data.frame(Count = upsets1) %>% mutate(., Format = "Current")
-upsets2 <- data.frame(Count = upsets2) %>% mutate(., Format = "8W8E")
-upsets3 <- data.frame(Count = upsets3) %>% mutate(., Format = "16TOT")
-upsetsf <- rbind(upsets1,upsets2,upsets3)
-lm.upsetsf <- lm(Count ~ Format, data = upsetsf)
-HSD.upsetsf <- HSD.test(lm.upsetsf, "Format"); HSD.upsetsf$groups
-upsetsf <- upsetsf %>%
-  mutate(., Group = if_else(Format == "Current", HSD.upsetsf$groups[2,2],
-                            if_else(Format == "8W8E", HSD.upsetsf$groups[3,2], HSD.upsetsf$groups[1,2]))) %>%
-  group_by(Format) %>%
-  arrange(., desc(Count)) %>%
-  mutate(., max_group = if_else(row_number()==1, Count, NaN)) %>%
-  ungroup(.)
-
-ggplot(data = upsetsf, aes(x = Format, y = Count)) +
-  geom_boxplot(aes(fill = Group), show.legend = FALSE) + 
-  theme_minimal() + 
-  labs(title = "Percentage of Upsets (Lower Seed Beat Higher Seed)",
-       subtitle = "Across All Rounds",
-       x = "Playoff Format", y = "# of Upsets/Total # of Games Played") +
-  geom_text(data=upsetsf, aes(y = max_group, label = Group, vjust = -.75, col = Group), show.legend = FALSE) +
-  scale_y_continuous(limits = c(0,1.1), labels = scales::percent_format(), breaks = c(0,.25,.5,.75,1)) +
-  geom_hline(data = numUpset[5,], aes(yintercept = n), col = "red", linetype = "dashed")
-
-
-
-
-#Long series by rounds
-#Round 1
-longSeries1r1 <- data.frame(Count = longSeries1[seq(1, length(longSeries1), 4)]) %>% mutate(., Round = 1, Format = "Current")
-longSeries2r1 <- data.frame(Count = longSeries2[seq(1, length(longSeries2), 4)]) %>% mutate(., Round = 1, Format = "8W, 8E")
-longSeries3r1 <- data.frame(Count = longSeries3[seq(1, length(longSeries3), 4)]) %>% mutate(., Round = 1, Format = "16 TOT")
-#Round 2
-longSeries1r2 <- data.frame(Count = longSeries1[seq(2, length(longSeries1), 4)]) %>% mutate(., Round = 2, Format = "Current")
-longSeries2r2 <- data.frame(Count = longSeries2[seq(2, length(longSeries2), 4)]) %>% mutate(., Round = 2, Format = "8W, 8E")
-longSeries3r2 <- data.frame(Count = longSeries3[seq(2, length(longSeries3), 4)]) %>% mutate(., Round = 2, Format = "16 TOT")
-#Round 3
-longSeries1r3 <- data.frame(Count = longSeries1[seq(3, length(longSeries1), 4)]) %>% mutate(., Round = 3, Format = "Current")
-longSeries2r3 <- data.frame(Count = longSeries2[seq(3, length(longSeries2), 4)]) %>% mutate(., Round = 3, Format = "8W, 8E")
-longSeries3r3 <- data.frame(Count = longSeries3[seq(3, length(longSeries3), 4)]) %>% mutate(., Round = 3, Format = "16 TOT")
-#Finals
-longSeries1r4 <- data.frame(Count = longSeries1[seq(4, length(longSeries1), 4)]) %>% mutate(., Round = 4, Format = "Current")
-longSeries2r4 <- data.frame(Count = longSeries2[seq(4, length(longSeries2), 4)]) %>% mutate(., Round = 4, Format = "8W, 8E")
-longSeries3r4 <- data.frame(Count = longSeries3[seq(4, length(longSeries3), 4)]) %>% mutate(., Round = 4, Format = "16 TOT")
-longSeries <- rbind(longSeries1r1,longSeries1r2,longSeries1r3,longSeries1r4,
-                    longSeries2r1,longSeries2r2,longSeries2r3,longSeries2r4,
-                    longSeries3r1,longSeries3r2,longSeries3r3,longSeries3r4)
-
-#Long Series HSD Tests (Separated by rounds)
-lm.longSeries <- lm(Count ~ Format + Round, data = longSeries)
-HSD.longSeries <- HSD.test(lm.longSeries, c("Format", "Round")); HSD.longSeries$groups
-longSeries <- tukey_label(longSeries, HSD.longSeries)
-longSeries <- longSeries %>%
-  group_by(Format, Round) %>%
-  arrange(., desc(Count)) %>%
-  mutate(., max_group = if_else(row_number()==1, as.integer(Count), as.integer(NaN))) %>%
-  ungroup(.)
-
-ggplot(data = longSeries, aes(x = Format, y = Count)) +
-  geom_boxplot(aes(fill = Group), show.legend = FALSE) + 
-  theme_minimal() + 
-  labs(title = "Percentage of Long Series (6 and 7 Games)",
-       subtitle = "Separated by Playoff Rounds (4 = Finals)",
-       x = "Playoff Format", y = "# of Long Series/Total # of Series Played") +
-  geom_text(data=longSeries, aes(y = max_group, label = Group, vjust = -.75, col = Group), show.legend = FALSE) +
-  facet_wrap(~ Round) + scale_y_continuous(limits = c(0,1.1), labels = scales::percent_format(), breaks = c(0,.25,.5,.75,1)) +
-  geom_hline(data = numLongSeries[1:4,], aes(yintercept = n), col = "red", linetype = "dashed")
-
-#longSeries HSD Tests (Not separated by rounds)
-longSeries1 <- data.frame(Count = longSeries1) %>% mutate(., Format = "Current")
-longSeries2 <- data.frame(Count = longSeries2) %>% mutate(., Format = "8W8E")
-longSeries3 <- data.frame(Count = longSeries3) %>% mutate(., Format = "16TOT")
-longSeriesf <- rbind(longSeries1,longSeries2,longSeries3)
-lm.longSeriesf <- lm(Count ~ Format, data = longSeriesf)
-HSD.longSeriesf <- HSD.test(lm.longSeriesf, "Format"); HSD.longSeriesf$groups
-longSeriesf <- longSeriesf %>%
-  mutate(., Group = if_else(Format == "Current", HSD.longSeriesf$groups[2,2],
-                            if_else(Format == "8W8E", HSD.longSeriesf$groups[1,2], HSD.longSeriesf$groups[3,2]))) %>%
-  group_by(Format) %>%
-  arrange(., desc(Count)) %>%
-  mutate(., max_group = if_else(row_number()==1, Count, NaN)) %>%
-  ungroup(.)
-
-ggplot(data = longSeriesf, aes(x = Format, y = Count)) +
-  geom_boxplot(aes(fill = Group), show.legend = FALSE) + 
-  theme_minimal() + 
-  labs(title = "Percentage of Long Series (6 and 7 Games)",
-       subtitle = "Across All Rounds",
-       x = "Playoff Format", y = "# of Long Series/Total # of Series Played") +
-  geom_text(data=longSeriesf, aes(y = max_group, label = Group, vjust = -.75, col = Group), show.legend = FALSE) +
-  geom_hline(data = numLongSeries[5,], aes(yintercept = n), col = "red", linetype = "dashed")
-
-
-
-
-#Close games by rounds
-#Round 1
-closeGames1r1 <- data.frame(Count = closeGames1[seq(1, length(closeGames1), 4)]) %>% mutate(., Round = 1, Format = "Current")
-closeGames2r1 <- data.frame(Count = closeGames2[seq(1, length(closeGames2), 4)]) %>% mutate(., Round = 1, Format = "8W, 8E")
-closeGames3r1 <- data.frame(Count = closeGames3[seq(1, length(closeGames3), 4)]) %>% mutate(., Round = 1, Format = "16 TOT")
-#Round 2
-closeGames1r2 <- data.frame(Count = closeGames1[seq(2, length(closeGames1), 4)]) %>% mutate(., Round = 2, Format = "Current")
-closeGames2r2 <- data.frame(Count = closeGames2[seq(2, length(closeGames2), 4)]) %>% mutate(., Round = 2, Format = "8W, 8E")
-closeGames3r2 <- data.frame(Count = closeGames3[seq(2, length(closeGames3), 4)]) %>% mutate(., Round = 2, Format = "16 TOT")
-#Round 3
-closeGames1r3 <- data.frame(Count = closeGames1[seq(3, length(closeGames1), 4)]) %>% mutate(., Round = 3, Format = "Current")
-closeGames2r3 <- data.frame(Count = closeGames2[seq(3, length(closeGames2), 4)]) %>% mutate(., Round = 3, Format = "8W, 8E")
-closeGames3r3 <- data.frame(Count = closeGames3[seq(3, length(closeGames3), 4)]) %>% mutate(., Round = 3, Format = "16 TOT")
-#Finals
-closeGames1r4 <- data.frame(Count = closeGames1[seq(4, length(closeGames1), 4)]) %>% mutate(., Round = 4, Format = "Current")
-closeGames2r4 <- data.frame(Count = closeGames2[seq(4, length(closeGames2), 4)]) %>% mutate(., Round = 4, Format = "8W, 8E")
-closeGames3r4 <- data.frame(Count = closeGames3[seq(4, length(closeGames3), 4)]) %>% mutate(., Round = 4, Format = "16 TOT")
-closeGames <- rbind(closeGames1r1,closeGames1r2,closeGames1r3,closeGames1r4,
-                    closeGames2r1,closeGames2r2,closeGames2r3,closeGames2r4,
-                    closeGames3r1,closeGames3r2,closeGames3r3,closeGames3r4)
-
-#Close Games HSD Tests (Separated by rounds)
-lm.close <- lm(Count ~ Format + Round, data = closeGames)
-HSD.close <- HSD.test(lm.close, c("Format", "Round")); HSD.close$groups
-closeGames <- tukey_label(closeGames, HSD.close)
-closeGames <- closeGames %>%
-  group_by(Format, Round) %>%
-  arrange(., desc(Count)) %>%
-  mutate(., max_group = if_else(row_number()==1, as.integer(Count), as.integer(NaN))) %>%
-  ungroup(.)
-
-ggplot(data = closeGames, aes(x = Format, y = Count)) +
-  geom_boxplot(aes(fill = Group), show.legend = FALSE) + 
-  theme_minimal() + 
-  labs(title = "Percentage of Close Games (Predicted Pts Diff < 3)",
-       subtitle = "Separated by Playoff Rounds (4 = Finals)",
-       x = "Playoff Format", y = "# of Close Games/Total # of Games Played") +
-  geom_text(data=closeGames, aes(y = max_group, label = Group, vjust = -.75, col = Group), show.legend = FALSE) +
-  facet_wrap(~ Round) + scale_y_continuous(limits = c(0,1.1), labels = scales::percent_format(), breaks = c(0,.25,.5,.75,1)) +
-  geom_hline(data = numClose[1:4,], aes(yintercept = n), col = "red", linetype = "dashed")
-
-#longSeries HSD Tests (Not separated by rounds)
-closeGames1 <- data.frame(Count = closeGames1) %>% mutate(., Format = "Current")
-closeGames2 <- data.frame(Count = closeGames2) %>% mutate(., Format = "8W8E")
-closeGames3 <- data.frame(Count = closeGames3) %>% mutate(., Format = "16TOT")
-closeGamesf <- rbind(closeGames1,closeGames2,closeGames3)
-lm.closef <- lm(Count ~ Format, data = closeGamesf)
-HSD.closef <- HSD.test(lm.closef, "Format"); HSD.closef$groups
-closeGamesf <- closeGamesf %>%
-  mutate(., Group = if_else(Format == "Current", HSD.closef$groups[3,2],
-                            if_else(Format == "8W8E", HSD.closef$groups[2,2], HSD.closef$groups[1,2]))) %>%
-  group_by(Format) %>%
-  arrange(., desc(Count)) %>%
-  mutate(., max_group = if_else(row_number()==1, Count, NaN)) %>%
-  ungroup(.)
-
-ggplot(data = closeGamesf, aes(x = Format, y = Count)) +
-  geom_boxplot(aes(fill = Group), show.legend = FALSE) + 
-  theme_minimal() + 
-  labs(title = "Percentage of Close Games (Predicted Pts Diff < 3)",
-       subtitle = "Across All Rounds",
-       x = "Playoff Format", y = "# of Close Games/Total # of Games Played") +
-  geom_text(data=closeGamesf, aes(y = max_group, label = Group, vjust = -.75, col = Group), show.legend = FALSE) +
-  scale_y_continuous(limits = c(0,1.1), labels = scales::percent_format(), breaks = c(0,.25,.5,.75,1)) +
-  geom_hline(data = numClose[5,], aes(yintercept = n), col = "red", linetype = "dashed")
+#### Plotting just the 2017/18 season. Last 10 seasons are plotted in 2017/18.figures.R ####
+# #High Overtime for by rounds
+# #Round 1
+# highOT1r1 <- data.frame(Count = highOT1[seq(1, length(highOT1), 4)]) %>% mutate(., Round = 1, Format = "Current")
+# highOT2r1 <- data.frame(Count = highOT2[seq(1, length(highOT2), 4)]) %>% mutate(., Round = 1, Format = "8W, 8E")
+# highOT3r1 <- data.frame(Count = highOT3[seq(1, length(highOT3), 4)]) %>% mutate(., Round = 1, Format = "16 TOT")
+# #Round 2
+# highOT1r2 <- data.frame(Count = highOT1[seq(2, length(highOT1), 4)]) %>% mutate(., Round = 2, Format = "Current")
+# highOT2r2 <- data.frame(Count = highOT2[seq(2, length(highOT2), 4)]) %>% mutate(., Round = 2, Format = "8W, 8E")
+# highOT3r2 <- data.frame(Count = highOT3[seq(2, length(highOT3), 4)]) %>% mutate(., Round = 2, Format = "16 TOT")
+# #Round 3
+# highOT1r3 <- data.frame(Count = highOT1[seq(3, length(highOT1), 4)]) %>% mutate(., Round = 3, Format = "Current")
+# highOT2r3 <- data.frame(Count = highOT2[seq(3, length(highOT2), 4)]) %>% mutate(., Round = 3, Format = "8W, 8E")
+# highOT3r3 <- data.frame(Count = highOT3[seq(3, length(highOT3), 4)]) %>% mutate(., Round = 3, Format = "16 TOT")
+# #Finals
+# highOT1r4 <- data.frame(Count = highOT1[seq(4, length(highOT1), 4)]) %>% mutate(., Round = 4, Format = "Current")
+# highOT2r4 <- data.frame(Count = highOT2[seq(4, length(highOT2), 4)]) %>% mutate(., Round = 4, Format = "8W, 8E")
+# highOT3r4 <- data.frame(Count = highOT3[seq(4, length(highOT3), 4)]) %>% mutate(., Round = 4, Format = "16 TOT")
+# highOT <- rbind(highOT1r1,highOT1r2,highOT1r3,highOT1r4,
+#                 highOT2r1,highOT2r2,highOT2r3,highOT2r4,
+#                 highOT3r1,highOT3r2,highOT3r3,highOT3r4)
+# 
+# #High OT HSD Tests (Separated by rounds)
+# library(agricolae)
+# lm.OT <- lm(Count ~ Format + Round, data = highOT)
+# HSD.OT <- HSD.test(lm.OT, c("Format", "Round")); HSD.OT$groups
+# highOT <- tukey_label(highOT, HSD.OT)
+# highOT <- highOT %>%
+#   mutate(., FR = paste0(Format,Round)) %>%
+#   group_by(Format, Round) %>%
+#   arrange(., desc(Count)) %>%
+#   mutate(., max_group = if_else(row_number()==1, Count, NaN)) %>%
+#   ungroup(.)
+# 
+# ggplot(data = highOT, aes(x = Format, y = Count)) +
+#   geom_boxplot(aes(fill = Group), show.legend = FALSE) + 
+#   theme_minimal() + 
+#   labs(title = "Percentage of Games With High Probability of Overtime",
+#        subtitle = "Separated by Playoff Rounds (4 = Finals)",
+#        x = "Playoff Format", y = "# of Games with High OT Prob/Total # of Games Played") +
+#   geom_text(data=highOT, aes(y = max_group, label = Group, vjust = -.75, col = Group), show.legend = FALSE) +
+#   facet_wrap(~ Round) + scale_y_continuous(limits = c(0,1.1), labels = scales::percent_format(), breaks = c(0,.25,.5,.75,1)) +
+#   geom_hline(data = numOT[1:4,], aes(yintercept = n), col = "red", linetype = "dashed")
+# 
+# #High OT HSD Tests (Not separated by rounds)
+# highOT1 <- data.frame(Count = highOT1) %>% mutate(., Format = "Current")
+# highOT2 <- data.frame(Count = highOT2) %>% mutate(., Format = "8W8E")
+# highOT3 <- data.frame(Count = highOT3) %>% mutate(., Format = "16TOT")
+# highOTf <- rbind(highOT1,highOT2,highOT3)
+# lm.OTf <- lm(Count ~ Format, data = highOTf)
+# HSD.OTf <- HSD.test(lm.OTf, "Format"); HSD.OTf$groups
+# highOTf <- highOTf %>%
+#   mutate(., Group = if_else(Format == "Current", HSD.OTf$groups[1,2],
+#                             if_else(Format == "8W8E", HSD.OTf$groups[2,2], HSD.OTf$groups[3,2]))) %>%
+#   group_by(Format) %>%
+#   arrange(., desc(Count)) %>%
+#   mutate(., max_group = if_else(row_number()==1, Count, NaN)) %>%
+#   ungroup(.)
+# 
+# ggplot(data = highOTf, aes(x = Format, y = Count)) +
+#   geom_boxplot(aes(fill = Group), show.legend = FALSE) + 
+#   theme_minimal() + 
+#   labs(title = "Percentage of Games With High Probability of Overtime",
+#        subtitle = "Across All Rounds",
+#        x = "Playoff Format", y = "# of Games with High OT Prob/Total # of Games Played") +
+#   geom_text(data=highOTf, aes(y = max_group, label = Group, vjust = -.75, col = Group), show.legend = FALSE) +
+#   scale_y_continuous(limits = c(0,1.1), labels = scales::percent_format(), breaks = c(0,.25,.5,.75,1))+
+#   geom_hline(data = numOT[5,], aes(yintercept = n), col = "red", linetype = "dashed")
+# 
+# 
+# 
+# 
+# 
+# 
+# #Upset Ratio by rounds
+# #Round 1
+# upsets1r1 <- data.frame(Count = upsets1[seq(1, length(upsets1), 4)]) %>% mutate(., Round = 1, Format = "Current")
+# upsets2r1 <- data.frame(Count = upsets2[seq(1, length(upsets2), 4)]) %>% mutate(., Round = 1, Format = "8W, 8E")
+# upsets3r1 <- data.frame(Count = upsets3[seq(1, length(upsets3), 4)]) %>% mutate(., Round = 1, Format = "16 TOT")
+# #Round 2
+# upsets1r2 <- data.frame(Count = upsets1[seq(2, length(upsets1), 4)]) %>% mutate(., Round = 2, Format = "Current")
+# upsets2r2 <- data.frame(Count = upsets2[seq(2, length(upsets2), 4)]) %>% mutate(., Round = 2, Format = "8W, 8E")
+# upsets3r2 <- data.frame(Count = upsets3[seq(2, length(upsets3), 4)]) %>% mutate(., Round = 2, Format = "16 TOT")
+# #Round 3
+# upsets1r3 <- data.frame(Count = upsets1[seq(3, length(upsets1), 4)]) %>% mutate(., Round = 3, Format = "Current")
+# upsets2r3 <- data.frame(Count = upsets2[seq(3, length(upsets2), 4)]) %>% mutate(., Round = 3, Format = "8W, 8E")
+# upsets3r3 <- data.frame(Count = upsets3[seq(3, length(upsets3), 4)]) %>% mutate(., Round = 3, Format = "16 TOT")
+# #Finals
+# upsets1r4 <- data.frame(Count = upsets1[seq(4, length(upsets1), 4)]) %>% mutate(., Round = 4, Format = "Current")
+# upsets2r4 <- data.frame(Count = upsets2[seq(4, length(upsets2), 4)]) %>% mutate(., Round = 4, Format = "8W, 8E")
+# upsets3r4 <- data.frame(Count = upsets3[seq(4, length(upsets3), 4)]) %>% mutate(., Round = 4, Format = "16 TOT")
+# upsets <- rbind(upsets1r1,upsets1r2,upsets1r3,upsets1r4,
+#                 upsets2r1,upsets2r2,upsets2r3,upsets2r4,
+#                 upsets3r1,upsets3r2,upsets3r3,upsets3r4)
+# 
+# #Upsets HSD Tests (Separated by rounds)
+# lm.upsets <- lm(Count ~ Format + Round, data = upsets)
+# library(agricolae)
+# HSD.upsets <- HSD.test(lm.upsets, c("Format", "Round")); HSD.upsets$groups
+# upsets <- tukey_label(upsets, HSD.upsets)
+# upsets <- upsets %>%
+#   group_by(Format, Round) %>%
+#   arrange(., desc(Count)) %>%
+#   mutate(., max_group = if_else(row_number()==1, Count, NaN)) %>%
+#   ungroup(.)
+# 
+# ggplot(data = upsets, aes(x = Format, y = Count)) +
+#   geom_boxplot(aes(fill = Group), show.legend = FALSE) + 
+#   theme_minimal() + 
+#   labs(title = "Percentage of Upsets (Lower Seed Beat Higher Seed)",
+#        subtitle = "Separated by Playoff Rounds (4 = Finals)",
+#        x = "Playoff Format", y = "# of Upsets/Total # of Games Played") + 
+#   geom_text(data=upsets, aes(y = max_group, label = Group, vjust = -.75, col = Group), show.legend = FALSE) +
+#   facet_wrap(~ Round) + scale_y_continuous(limits = c(0,1.1), labels = scales::percent_format(), breaks = c(0,.25,.5,.75,1)) +
+#   geom_hline(data = numUpset[1:4,], aes(yintercept = n), col = "red", linetype = "dashed")
+# 
+# #Upsets HSD Tests (Not separated by rounds)
+# upsets1 <- data.frame(Count = upsets1) %>% mutate(., Format = "Current")
+# upsets2 <- data.frame(Count = upsets2) %>% mutate(., Format = "8W8E")
+# upsets3 <- data.frame(Count = upsets3) %>% mutate(., Format = "16TOT")
+# upsetsf <- rbind(upsets1,upsets2,upsets3)
+# lm.upsetsf <- lm(Count ~ Format, data = upsetsf)
+# HSD.upsetsf <- HSD.test(lm.upsetsf, "Format"); HSD.upsetsf$groups
+# upsetsf <- upsetsf %>%
+#   mutate(., Group = if_else(Format == "Current", HSD.upsetsf$groups[2,2],
+#                             if_else(Format == "8W8E", HSD.upsetsf$groups[3,2], HSD.upsetsf$groups[1,2]))) %>%
+#   group_by(Format) %>%
+#   arrange(., desc(Count)) %>%
+#   mutate(., max_group = if_else(row_number()==1, Count, NaN)) %>%
+#   ungroup(.)
+# 
+# ggplot(data = upsetsf, aes(x = Format, y = Count)) +
+#   geom_boxplot(aes(fill = Group), show.legend = FALSE) + 
+#   theme_minimal() + 
+#   labs(title = "Percentage of Upsets (Lower Seed Beat Higher Seed)",
+#        subtitle = "Across All Rounds",
+#        x = "Playoff Format", y = "# of Upsets/Total # of Games Played") +
+#   geom_text(data=upsetsf, aes(y = max_group, label = Group, vjust = -.75, col = Group), show.legend = FALSE) +
+#   scale_y_continuous(limits = c(0,1.1), labels = scales::percent_format(), breaks = c(0,.25,.5,.75,1)) +
+#   geom_hline(data = numUpset[5,], aes(yintercept = n), col = "red", linetype = "dashed")
+# 
+# 
+# 
+# 
+# #Long series by rounds
+# #Round 1
+# longSeries1r1 <- data.frame(Count = longSeries1[seq(1, length(longSeries1), 4)]) %>% mutate(., Round = 1, Format = "Current")
+# longSeries2r1 <- data.frame(Count = longSeries2[seq(1, length(longSeries2), 4)]) %>% mutate(., Round = 1, Format = "8W, 8E")
+# longSeries3r1 <- data.frame(Count = longSeries3[seq(1, length(longSeries3), 4)]) %>% mutate(., Round = 1, Format = "16 TOT")
+# #Round 2
+# longSeries1r2 <- data.frame(Count = longSeries1[seq(2, length(longSeries1), 4)]) %>% mutate(., Round = 2, Format = "Current")
+# longSeries2r2 <- data.frame(Count = longSeries2[seq(2, length(longSeries2), 4)]) %>% mutate(., Round = 2, Format = "8W, 8E")
+# longSeries3r2 <- data.frame(Count = longSeries3[seq(2, length(longSeries3), 4)]) %>% mutate(., Round = 2, Format = "16 TOT")
+# #Round 3
+# longSeries1r3 <- data.frame(Count = longSeries1[seq(3, length(longSeries1), 4)]) %>% mutate(., Round = 3, Format = "Current")
+# longSeries2r3 <- data.frame(Count = longSeries2[seq(3, length(longSeries2), 4)]) %>% mutate(., Round = 3, Format = "8W, 8E")
+# longSeries3r3 <- data.frame(Count = longSeries3[seq(3, length(longSeries3), 4)]) %>% mutate(., Round = 3, Format = "16 TOT")
+# #Finals
+# longSeries1r4 <- data.frame(Count = longSeries1[seq(4, length(longSeries1), 4)]) %>% mutate(., Round = 4, Format = "Current")
+# longSeries2r4 <- data.frame(Count = longSeries2[seq(4, length(longSeries2), 4)]) %>% mutate(., Round = 4, Format = "8W, 8E")
+# longSeries3r4 <- data.frame(Count = longSeries3[seq(4, length(longSeries3), 4)]) %>% mutate(., Round = 4, Format = "16 TOT")
+# longSeries <- rbind(longSeries1r1,longSeries1r2,longSeries1r3,longSeries1r4,
+#                     longSeries2r1,longSeries2r2,longSeries2r3,longSeries2r4,
+#                     longSeries3r1,longSeries3r2,longSeries3r3,longSeries3r4)
+# 
+# #Long Series HSD Tests (Separated by rounds)
+# lm.longSeries <- lm(Count ~ Format + Round, data = longSeries)
+# HSD.longSeries <- HSD.test(lm.longSeries, c("Format", "Round")); HSD.longSeries$groups
+# longSeries <- tukey_label(longSeries, HSD.longSeries)
+# longSeries <- longSeries %>%
+#   group_by(Format, Round) %>%
+#   arrange(., desc(Count)) %>%
+#   mutate(., max_group = if_else(row_number()==1, as.integer(Count), as.integer(NaN))) %>%
+#   ungroup(.)
+# 
+# ggplot(data = longSeries, aes(x = Format, y = Count)) +
+#   geom_boxplot(aes(fill = Group), show.legend = FALSE) + 
+#   theme_minimal() + 
+#   labs(title = "Percentage of Long Series (6 and 7 Games)",
+#        subtitle = "Separated by Playoff Rounds (4 = Finals)",
+#        x = "Playoff Format", y = "# of Long Series/Total # of Series Played") +
+#   geom_text(data=longSeries, aes(y = max_group, label = Group, vjust = -.75, col = Group), show.legend = FALSE) +
+#   facet_wrap(~ Round) + scale_y_continuous(limits = c(0,1.1), labels = scales::percent_format(), breaks = c(0,.25,.5,.75,1)) +
+#   geom_hline(data = numLongSeries[1:4,], aes(yintercept = n), col = "red", linetype = "dashed")
+# 
+# #longSeries HSD Tests (Not separated by rounds)
+# longSeries1 <- data.frame(Count = longSeries1) %>% mutate(., Format = "Current")
+# longSeries2 <- data.frame(Count = longSeries2) %>% mutate(., Format = "8W8E")
+# longSeries3 <- data.frame(Count = longSeries3) %>% mutate(., Format = "16TOT")
+# longSeriesf <- rbind(longSeries1,longSeries2,longSeries3)
+# lm.longSeriesf <- lm(Count ~ Format, data = longSeriesf)
+# HSD.longSeriesf <- HSD.test(lm.longSeriesf, "Format"); HSD.longSeriesf$groups
+# longSeriesf <- longSeriesf %>%
+#   mutate(., Group = if_else(Format == "Current", HSD.longSeriesf$groups[2,2],
+#                             if_else(Format == "8W8E", HSD.longSeriesf$groups[1,2], HSD.longSeriesf$groups[3,2]))) %>%
+#   group_by(Format) %>%
+#   arrange(., desc(Count)) %>%
+#   mutate(., max_group = if_else(row_number()==1, Count, NaN)) %>%
+#   ungroup(.)
+# 
+# ggplot(data = longSeriesf, aes(x = Format, y = Count)) +
+#   geom_boxplot(aes(fill = Group), show.legend = FALSE) + 
+#   theme_minimal() + 
+#   labs(title = "Percentage of Long Series (6 and 7 Games)",
+#        subtitle = "Across All Rounds",
+#        x = "Playoff Format", y = "# of Long Series/Total # of Series Played") +
+#   geom_text(data=longSeriesf, aes(y = max_group, label = Group, vjust = -.75, col = Group), show.legend = FALSE) +
+#   geom_hline(data = numLongSeries[5,], aes(yintercept = n), col = "red", linetype = "dashed")
 
 
 
-#Just exploring the values that expected points differences take on
-closeTestInd <- which(abs(real1718$VisPts-real1718$HomePts)<=3)
-closeTest <- data.frame(high = rep(NA,length(closeTestInd)), low = rep(NA,length(closeTestInd)), game = rep(NA,length(closeTestInd)))
-for(i in 1:length(closeTestInd)){
-  ind <- closeTestInd[i]
-  home <- real1718$Home[ind]
-  vis <- real1718$Vis[ind]
-  if(isTRUE(real1718$HomeSeed[ind] > real1718$VisSeed[ind])){
-    closeTest$high[i] <- vis
-    closeTest$low[i] <- home
-    closeTest$game[i] <- 3
-  }
-  else{
-    closeTest$high[i] <- home
-    closeTest$low[i] <- vis
-    closeTest$game[i] <- 1
-  }
-}
-real1718[closeTestInd,]
-summary(abs(gameSim(closeTest$high, closeTest$low, closeTest$game)[23:33]))
+#### NOT WORRIED ABOUT CLOSE GAMES ####
+# #Close games by rounds
+# #Round 1
+# closeGames1r1 <- data.frame(Count = closeGames1[seq(1, length(closeGames1), 4)]) %>% mutate(., Round = 1, Format = "Current")
+# closeGames2r1 <- data.frame(Count = closeGames2[seq(1, length(closeGames2), 4)]) %>% mutate(., Round = 1, Format = "8W, 8E")
+# closeGames3r1 <- data.frame(Count = closeGames3[seq(1, length(closeGames3), 4)]) %>% mutate(., Round = 1, Format = "16 TOT")
+# #Round 2
+# closeGames1r2 <- data.frame(Count = closeGames1[seq(2, length(closeGames1), 4)]) %>% mutate(., Round = 2, Format = "Current")
+# closeGames2r2 <- data.frame(Count = closeGames2[seq(2, length(closeGames2), 4)]) %>% mutate(., Round = 2, Format = "8W, 8E")
+# closeGames3r2 <- data.frame(Count = closeGames3[seq(2, length(closeGames3), 4)]) %>% mutate(., Round = 2, Format = "16 TOT")
+# #Round 3
+# closeGames1r3 <- data.frame(Count = closeGames1[seq(3, length(closeGames1), 4)]) %>% mutate(., Round = 3, Format = "Current")
+# closeGames2r3 <- data.frame(Count = closeGames2[seq(3, length(closeGames2), 4)]) %>% mutate(., Round = 3, Format = "8W, 8E")
+# closeGames3r3 <- data.frame(Count = closeGames3[seq(3, length(closeGames3), 4)]) %>% mutate(., Round = 3, Format = "16 TOT")
+# #Finals
+# closeGames1r4 <- data.frame(Count = closeGames1[seq(4, length(closeGames1), 4)]) %>% mutate(., Round = 4, Format = "Current")
+# closeGames2r4 <- data.frame(Count = closeGames2[seq(4, length(closeGames2), 4)]) %>% mutate(., Round = 4, Format = "8W, 8E")
+# closeGames3r4 <- data.frame(Count = closeGames3[seq(4, length(closeGames3), 4)]) %>% mutate(., Round = 4, Format = "16 TOT")
+# closeGames <- rbind(closeGames1r1,closeGames1r2,closeGames1r3,closeGames1r4,
+#                     closeGames2r1,closeGames2r2,closeGames2r3,closeGames2r4,
+#                     closeGames3r1,closeGames3r2,closeGames3r3,closeGames3r4)
+# 
+# #Close Games HSD Tests (Separated by rounds)
+# lm.close <- lm(Count ~ Format + Round, data = closeGames)
+# HSD.close <- HSD.test(lm.close, c("Format", "Round")); HSD.close$groups
+# closeGames <- tukey_label(closeGames, HSD.close)
+# closeGames <- closeGames %>%
+#   group_by(Format, Round) %>%
+#   arrange(., desc(Count)) %>%
+#   mutate(., max_group = if_else(row_number()==1, as.integer(Count), as.integer(NaN))) %>%
+#   ungroup(.)
+# 
+# ggplot(data = closeGames, aes(x = Format, y = Count)) +
+#   geom_boxplot(aes(fill = Group), show.legend = FALSE) + 
+#   theme_minimal() + 
+#   labs(title = "Percentage of Close Games (Predicted Pts Diff <= 4)",
+#        subtitle = "Separated by Playoff Rounds (4 = Finals)",
+#        x = "Playoff Format", y = "# of Close Games/Total # of Games Played") +
+#   geom_text(data=closeGames, aes(y = max_group, label = Group, vjust = -.75, col = Group), show.legend = FALSE) +
+#   facet_wrap(~ Round) + scale_y_continuous(limits = c(0,1.1), labels = scales::percent_format(), breaks = c(0,.25,.5,.75,1)) +
+#   geom_hline(data = numClose[1:4,], aes(yintercept = n), col = "red", linetype = "dashed")
+# 
+# #longSeries HSD Tests (Not separated by rounds)
+# closeGames1 <- data.frame(Count = closeGames1) %>% mutate(., Format = "Current")
+# closeGames2 <- data.frame(Count = closeGames2) %>% mutate(., Format = "8W8E")
+# closeGames3 <- data.frame(Count = closeGames3) %>% mutate(., Format = "16TOT")
+# closeGamesf <- rbind(closeGames1,closeGames2,closeGames3)
+# lm.closef <- lm(Count ~ Format, data = closeGamesf)
+# HSD.closef <- HSD.test(lm.closef, "Format"); HSD.closef$groups
+# closeGamesf <- closeGamesf %>%
+#   mutate(., Group = if_else(Format == "Current", HSD.closef$groups[3,2],
+#                             if_else(Format == "8W8E", HSD.closef$groups[2,2], HSD.closef$groups[1,2]))) %>%
+#   group_by(Format) %>%
+#   arrange(., desc(Count)) %>%
+#   mutate(., max_group = if_else(row_number()==1, Count, NaN)) %>%
+#   ungroup(.)
+# 
+# ggplot(data = closeGamesf, aes(x = Format, y = Count)) +
+#   geom_boxplot(aes(fill = Group), show.legend = FALSE) + 
+#   theme_minimal() + 
+#   labs(title = "Percentage of Close Games (Predicted Pts Diff <= 4)",
+#        subtitle = "Across All Rounds",
+#        x = "Playoff Format", y = "# of Close Games/Total # of Games Played") +
+#   geom_text(data=closeGamesf, aes(y = max_group, label = Group, vjust = -.75, col = Group), show.legend = FALSE) +
+#   scale_y_continuous(limits = c(0,1.1), labels = scales::percent_format(), breaks = c(0,.25,.5,.75,1)) +
+#   geom_hline(data = numClose[5,], aes(yintercept = n), col = "red", linetype = "dashed")
+# 
 
 
 
 
-closeTest2 <- data.frame(high = rep(NA,82), low = rep(NA,82), game = rep(NA,82))
-for(i in 1:82){
-  home <- real1718$Home[i]
-  vis <- real1718$Vis[i]
-  if(isTRUE(real1718$HomeSeed[i] > real1718$VisSeed[i])){
-    closeTest2$high[i] <- vis
-    closeTest2$low[i] <- home
-    closeTest2$game[i] <- 3
-  }
-  else{
-    closeTest2$high[i] <- home
-    closeTest2$low[i] <- vis
-    closeTest2$game[i] <- 1
-  }
-}
-summary(abs(gameSim(closeTest2$high, closeTest2$low, closeTest2$game)[165:246]))
-unique(sort(abs(gameSim(closeTest2$high, closeTest2$low, closeTest2$game)[165:246])))
-sum(abs(gameSim(closeTest2$high, closeTest2$low, closeTest2$game)[165:246])<= 3)
-closeTest2[1,3]
-gameSim(closeTest2[2,1], closeTest2[2,2], closeTest2[2,3])

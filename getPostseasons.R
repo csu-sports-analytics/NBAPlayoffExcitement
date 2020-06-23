@@ -527,3 +527,5 @@ ggplot(data = closeGamesf, aes(x = Format, y = Count)) +
                    force = 10, size = 2.5, direction = "y", box.padding = 1) +
   theme(legend.position = "none")
 
+
+
