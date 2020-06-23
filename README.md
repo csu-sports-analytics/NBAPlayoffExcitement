@@ -16,9 +16,9 @@ To test which of these formats would produce the most exciting games and series,
 4. __8west8east.format.sim.R__
 5. __16team.format.sim.R__
 6. __figures.R__
-7. __getPostseasons.R__ *optional*
+7. __get.postseasons.R__ *(optional)*
 8. __NBA201718.sim.R__
-9. __getPostseasons.R__ *optional*
+9. __get.postseasons.R__ *(optional)*
 
 ## Process
 __get.scores.r__ collects NBA regular season data from [basketball-reference.com](https://www.basketball-reference.com/leagues/). The script cleans the data into a more usable and sleek form so that it is easier to work with in __create.model.R__. 
