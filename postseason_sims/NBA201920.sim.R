@@ -1,6 +1,7 @@
 library(RCurl)
 library(XML)
 library(tidyverse)
+set.seed(100)
 #Using data from the 2018/19 and 2019/20 seasons
 years <- c(2019:2020)
 
@@ -36,6 +37,8 @@ for(i in 1:length(years)){
     games <- rbind(games,month_sched)
   }
 }
+
+allTeams <- unique(games$Team)
 
 #Adding PtsDiff to games
 games <- games %>%
@@ -89,6 +92,7 @@ games$exp_pts_diff <- predict(lm.nba, newdata = games, type = "response")
 games$win <- ifelse(games$PtsDiff > 0,1,0)
 glm.spread <- glm(win ~ exp_pts_diff, data = games, family = "binomial")
 
+#Updating gameSim to use 2019/20 model alongside gameSim
 gameSim <- function(high, low, game){
   #Higher seed is home
   if(isTRUE(game<3 | game == 5 | game == 7)){
@@ -98,11 +102,10 @@ gameSim <- function(high, low, game){
     gamedf <- data.frame("Team" = high, "Opponent" = low, "Location" = "A", stringsAsFactors = F)
   }
   #Predicting game points difference
-  gamedf$exp_pts_diff <- as.numeric(as.character(unlist(predict.lm(lm.nba, newdata = gamedf, se.fit = TRUE, type = "response")[[1]]))) + 
-    rnorm(1, mean = 0, sd = summary(lm.nba)$sigma)
+  gamedf$exp_pts_diff <- as.numeric(predict(lm.nba, newdata = gamedf, type = "response")[[1]])
   
   #Odds of points high seed winning given pts diff
-  win_prob <- predict.glm(glm.spread, newdata = gamedf, type = "response")
+  win_prob <- predict.glm(glm.spread, newdata = gamedf, type = "response")[[1]]
   
   #Returns TRUE or FALSE based on win probability
   #If TRUE, the higher seed won, if FALSE, the lower seed won
@@ -110,7 +113,7 @@ gameSim <- function(high, low, game){
 }
 
 #### Current Format ####
-S <- 20000
+S <- 10000
 playoffSim1 <- list()
 for(s in 1:S){
   #Gathering teams that would make the playoffs if the season ended on March 11, 2020
@@ -266,9 +269,6 @@ for(s in 1:S){
 
 
 
-
-
-
 #Figuring out the indexing for highOTprob series, upsets, number of 6/7 game series and close games
 upsetIndex1 <- rep(NA,(4*S))
 s <- 1
@@ -332,10 +332,10 @@ library(teamcolors)
 champscol1 <- intersect(allTeams, champsfreq1$champs1)
 primcolors1 <- gather(data.frame(lapply(sort(champscol1), team_pal))[1,])$value
 
-
+set.seed(100)
 #### 8W,8E Format ####
 #Doing 20000 series simulations
-S <- 20000
+S <- 10000
 playoffSim2 <- list()
 for(s in 1:S){
   #Gathering teams that would make the playoffs if the season ended on March 11, 2020
@@ -443,9 +443,6 @@ for(s in 1:S){
 }
 
 
-
-
-
 #Figuring out the indexing for highOTprob series, upsets, number of 6/7 game series and close games
 upsetIndex2 <- rep(NA,(4*S))
 s <- 1
@@ -508,6 +505,8 @@ champsfreq2 <- data.frame(table(champs2))
 library(teamcolors)
 champscol2 <- intersect(allTeams, champsfreq2$champs2)
 primcolors2 <- gather(data.frame(lapply(sort(champscol2), team_pal))[1,])$value
+
+
 
 
 

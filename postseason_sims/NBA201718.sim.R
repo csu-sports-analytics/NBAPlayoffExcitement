@@ -1,9 +1,9 @@
 library(RCurl)
 library(XML)
 library(tidyverse)
+set.seed(100)
 #Must get scores from 2016/17 and 2017/18 because this is the last time this
 #scenario would be applicable
-set.seed(100)
 
 #Using data from the 2016/17 and 2017/18 seasons
 years <- c(2017:2018)
@@ -82,7 +82,7 @@ names(games_away)=c("Team", "Opponent", "PtsDiff", "Location", "Game_Weight")
 games <- rbind(games, games_away)
 
 #Making linear model to predict team score
-lm.nba.old <- lm(PtsDiff ~ Team:Opponent + Location,
+lm.nba.old <- lm(PtsDiff ~ Team + Opponent + Location,
                  data = games,
                  weights = Game_Weight)
 
@@ -127,7 +127,7 @@ teams1718 <- data.frame("Seed" = 1:16,
 
 #### Current Format ####
 #Doing 20000 series simulations
-S <- 20000
+S <- 10000
 playoffSim1718Curr <- list()
 for(s in 1:S){
   #Gathering teams that would made the playoffs
@@ -348,7 +348,7 @@ primcolors1 <- gather(data.frame(lapply(sort(champscol1), team_pal))[1,])$value
 
 #### 8 West, 8 East Format ####
 #Doing 20000 series simulations
-S <- 20000
+S <- 10000
 playoffSim17188W8E <- list()
 for(s in 1:S){
   #Gathering teams that made the playoffs
@@ -521,7 +521,7 @@ primcolors2 <- gather(data.frame(lapply(sort(champscol2), team_pal))[1,])$value
 
 #### 16 TOT Format ####
 #Doing 20000 series simulations
-S <- 20000
+S <- 10000
 playoffSim171816 <- list()
 for(s in 1:S){
   #Gathering teams that would make the playoffs if the top 16 teams in the NBA were chosen
