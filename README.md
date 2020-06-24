@@ -1,10 +1,14 @@
 # NBA Playoff Excitement
-## *An exploration of the most exciting (and plausible) NBA Playoffs format*
-## Quinn Johnson
-## Colorado State University
-## June 2020
+*An exploration of the most exciting (and plausible) NBA Playoffs formats.*
 
-# Script run order
+Quinn Johnson
+
+Colorado State University
+
+June 2020
+
+
+## Script run order
 1. __current.format.sim.R__: Functions that simulate the NBA Playoffs in its current format (as of June 2020)
 2. __8west8east.format.sim.R__: Functions that simulate the NBA Playoffs in a format where the Eastern and Western Conferences each send their top eight teams to a conference-less tournament. So the #1 overall seed plays the #16 overall seed, as opposed to the #1 seed in each conference plays the #8 seed in the same conference.
 3. __16team.format.sim.R__: Functions that simulate the NBA Playoffs in a format where the top 16 teams, regardless of conference, play in a conference-less tournament. 
