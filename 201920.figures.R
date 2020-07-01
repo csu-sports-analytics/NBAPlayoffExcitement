@@ -3,14 +3,14 @@ library(ggrepel)
 ggplot(data = champsfreq1, aes(x = reorder(champs1, -Freq), y = Freq/S)) + geom_bar(stat = "identity", aes(fill = champs1)) + 
   theme_minimal() + theme(axis.text.x = element_text(angle = 90), legend.position = "none") + 
   scale_fill_manual(values = primcolors1) + geom_text(aes(label=round(Freq/S,3), vjust = -.25), size = 2.5)+
-  scale_y_continuous(limits = c(0,.35), labels = scales::percent_format(), breaks = c(0,.167,.333)) +
+  scale_y_continuous(limits = c(0,.55), labels = scales::percent_format(), breaks = c(0,.25,.5)) +
   labs(title = "Proportion of Simulated Championships (10,000 sims)", x = "Team", y = "Proportion", subtitle = "Current Playoff Format for 2019/20 Season")
 
 #### 2019/20 8W,8E format champions plot ####
 ggplot(data = champsfreq2, aes(x = reorder(champs2, -Freq), y = Freq/S)) + geom_bar(stat = "identity", aes(fill = champs2)) + 
   theme_minimal() + theme(axis.text.x = element_text(angle = 90), legend.position = "none") + 
   scale_fill_manual(values = primcolors2) + geom_text(aes(label=round(Freq/S,3), vjust = -.25), size = 2.5)+
-  scale_y_continuous(limits = c(0,.35), labels = scales::percent_format(), breaks = c(0,.167,.333)) +
+  scale_y_continuous(limits = c(0,.55), labels = scales::percent_format(), breaks = c(0,.25,.5)) +
   labs(title = "Proportion of Simulated Championships (10,000 sims)", x = "Team", y = "Proportion", subtitle = "8 West and 8 East, Conference-less Playoff Format  for 2019/20 Season")
 
 #### 2019/20 Sim High OT vs 2010-2019 (by Round and Format) ####

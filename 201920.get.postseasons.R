@@ -163,7 +163,7 @@ getMets <- function(postseason, year){
   numClose$n <- numClose$n/numGames$n
   numUpset$n <- numUpset$n/numGames$n
   
-  return(c(numOT, numLongSeries, numClose, numUpset))
+  return(c(numOT, numLongSeries, numClose, numUpset, numGames))
 }
 
 ##### Function that takes in the list format and rebuilds them into dataframes ####
@@ -185,6 +185,7 @@ for(y in min_year:max_year){
   assign(paste0(y, "_longSeries"), rebuild_metric(metrics[c(3,4)],y))
   assign(paste0(y, "_Close"), rebuild_metric(metrics[c(5,6)],y))
   assign(paste0(y, "_Upset"), rebuild_metric(metrics[c(7,8)],y))
+  assign(paste0(y, "_Games"), rebuild_metric(metrics[c(9,10)],y))
 }
 
 #### Gathering yearly metrics into one dataframe for each metric ####

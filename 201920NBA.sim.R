@@ -82,7 +82,7 @@ games <- rbind(games, games_away)
 games <- rbind(games, games_away)
 
 #Making linear model to predict team score
-lm.nba <- lm(PtsDiff ~ Team*Opponent + Location,
+lm.nba <- lm(PtsDiff ~ Team + Opponent + Location,
              data = games,
              weights = Game_Weight)
 #Getting expected scores for each game
@@ -332,7 +332,6 @@ library(teamcolors)
 champscol1 <- intersect(allTeams, champsfreq1$champs1)
 primcolors1 <- gather(data.frame(lapply(sort(champscol1), team_pal))[1,])$value
 
-set.seed(100)
 #### 8W,8E Format ####
 #Doing 20000 series simulations
 S <- 10000
@@ -505,7 +504,6 @@ champsfreq2 <- data.frame(table(champs2))
 library(teamcolors)
 champscol2 <- intersect(allTeams, champsfreq2$champs2)
 primcolors2 <- gather(data.frame(lapply(sort(champscol2), team_pal))[1,])$value
-
 
 
 
