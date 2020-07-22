@@ -237,16 +237,16 @@ tukey_label <- function(df, hsd){
 #### High Overtime for by rounds ####
 #Round 1
 highOT1r1 <- data.frame(Count = highOT1[seq(1, length(highOT1), 4)]) %>% mutate(., Round = 1, Format = "Current")
-highOT2r1 <- data.frame(Count = highOT2[seq(1, length(highOT2), 4)]) %>% mutate(., Round = 1, Format = "8W, 8E")
+highOT2r1 <- data.frame(Count = highOT2[seq(1, length(highOT2), 4)]) %>% mutate(., Round = 1, Format = "8W8E")
 #Round 2
 highOT1r2 <- data.frame(Count = highOT1[seq(2, length(highOT1), 4)]) %>% mutate(., Round = 2, Format = "Current")
-highOT2r2 <- data.frame(Count = highOT2[seq(2, length(highOT2), 4)]) %>% mutate(., Round = 2, Format = "8W, 8E")
+highOT2r2 <- data.frame(Count = highOT2[seq(2, length(highOT2), 4)]) %>% mutate(., Round = 2, Format = "8W8E")
 #Round 3
 highOT1r3 <- data.frame(Count = highOT1[seq(3, length(highOT1), 4)]) %>% mutate(., Round = 3, Format = "Current")
-highOT2r3 <- data.frame(Count = highOT2[seq(3, length(highOT2), 4)]) %>% mutate(., Round = 3, Format = "8W, 8E")
+highOT2r3 <- data.frame(Count = highOT2[seq(3, length(highOT2), 4)]) %>% mutate(., Round = 3, Format = "8W8E")
 #Finals
 highOT1r4 <- data.frame(Count = highOT1[seq(4, length(highOT1), 4)]) %>% mutate(., Round = 4, Format = "Current")
-highOT2r4 <- data.frame(Count = highOT2[seq(4, length(highOT2), 4)]) %>% mutate(., Round = 4, Format = "8W, 8E")
+highOT2r4 <- data.frame(Count = highOT2[seq(4, length(highOT2), 4)]) %>% mutate(., Round = 4, Format = "8W8E")
 highOT <- rbind(highOT1r1,highOT1r2,highOT1r3,highOT1r4,
                 highOT2r1,highOT2r2,highOT2r3,highOT2r4)
 
@@ -282,16 +282,16 @@ highOTf <- highOTf %>%
 #### Upset Ratio by rounds ####
 #Round 1
 upsets1r1 <- data.frame(Count = upsets1[seq(1, length(upsets1), 4)]) %>% mutate(., Round = 1, Format = "Current")
-upsets2r1 <- data.frame(Count = upsets2[seq(1, length(upsets2), 4)]) %>% mutate(., Round = 1, Format = "8W, 8E")
+upsets2r1 <- data.frame(Count = upsets2[seq(1, length(upsets2), 4)]) %>% mutate(., Round = 1, Format = "8W8E")
 #Round 2
 upsets1r2 <- data.frame(Count = upsets1[seq(2, length(upsets1), 4)]) %>% mutate(., Round = 2, Format = "Current")
-upsets2r2 <- data.frame(Count = upsets2[seq(2, length(upsets2), 4)]) %>% mutate(., Round = 2, Format = "8W, 8E")
+upsets2r2 <- data.frame(Count = upsets2[seq(2, length(upsets2), 4)]) %>% mutate(., Round = 2, Format = "8W8E")
 #Round 3
 upsets1r3 <- data.frame(Count = upsets1[seq(3, length(upsets1), 4)]) %>% mutate(., Round = 3, Format = "Current")
-upsets2r3 <- data.frame(Count = upsets2[seq(3, length(upsets2), 4)]) %>% mutate(., Round = 3, Format = "8W, 8E")
+upsets2r3 <- data.frame(Count = upsets2[seq(3, length(upsets2), 4)]) %>% mutate(., Round = 3, Format = "8W8E")
 #Finals
 upsets1r4 <- data.frame(Count = upsets1[seq(4, length(upsets1), 4)]) %>% mutate(., Round = 4, Format = "Current")
-upsets2r4 <- data.frame(Count = upsets2[seq(4, length(upsets2), 4)]) %>% mutate(., Round = 4, Format = "8W, 8E")
+upsets2r4 <- data.frame(Count = upsets2[seq(4, length(upsets2), 4)]) %>% mutate(., Round = 4, Format = "8W8E")
 upsets <- rbind(upsets1r1,upsets1r2,upsets1r3,upsets1r4,
                 upsets2r1,upsets2r2,upsets2r3,upsets2r4)
 
@@ -324,16 +324,16 @@ upsetsf <- upsetsf %>%
 #### Long series by rounds ####
 #Round 1
 longSeries1r1 <- data.frame(Count = longSeries1[seq(1, length(longSeries1), 4)]) %>% mutate(., Round = 1, Format = "Current")
-longSeries2r1 <- data.frame(Count = longSeries2[seq(1, length(longSeries2), 4)]) %>% mutate(., Round = 1, Format = "8W, 8E")
+longSeries2r1 <- data.frame(Count = longSeries2[seq(1, length(longSeries2), 4)]) %>% mutate(., Round = 1, Format = "8W8E")
 #Round 2
 longSeries1r2 <- data.frame(Count = longSeries1[seq(2, length(longSeries1), 4)]) %>% mutate(., Round = 2, Format = "Current")
-longSeries2r2 <- data.frame(Count = longSeries2[seq(2, length(longSeries2), 4)]) %>% mutate(., Round = 2, Format = "8W, 8E")
+longSeries2r2 <- data.frame(Count = longSeries2[seq(2, length(longSeries2), 4)]) %>% mutate(., Round = 2, Format = "8W8E")
 #Round 3
 longSeries1r3 <- data.frame(Count = longSeries1[seq(3, length(longSeries1), 4)]) %>% mutate(., Round = 3, Format = "Current")
-longSeries2r3 <- data.frame(Count = longSeries2[seq(3, length(longSeries2), 4)]) %>% mutate(., Round = 3, Format = "8W, 8E")
+longSeries2r3 <- data.frame(Count = longSeries2[seq(3, length(longSeries2), 4)]) %>% mutate(., Round = 3, Format = "8W8E")
 #Finals
 longSeries1r4 <- data.frame(Count = longSeries1[seq(4, length(longSeries1), 4)]) %>% mutate(., Round = 4, Format = "Current")
-longSeries2r4 <- data.frame(Count = longSeries2[seq(4, length(longSeries2), 4)]) %>% mutate(., Round = 4, Format = "8W, 8E")
+longSeries2r4 <- data.frame(Count = longSeries2[seq(4, length(longSeries2), 4)]) %>% mutate(., Round = 4, Format = "8W8E")
 longSeries <- rbind(longSeries1r1,longSeries1r2,longSeries1r3,longSeries1r4,
                     longSeries2r1,longSeries2r2,longSeries2r3,longSeries2r4)
 
