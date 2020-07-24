@@ -153,7 +153,7 @@ getMets <- function(postseason, year){
   numLongSeries$n <- numLongSeries$n/c(8,4,2,1,15)
   numUpset$n <- numUpset$n/numGames$n
   
-  return(c(numOT, numLongSeries, numClose, numUpset, numGames))
+  return(c(numOT, numLongSeries, numUpset, numGames))
 }
 
 ##### Function that takes in the list format and rebuilds them into dataframes ####

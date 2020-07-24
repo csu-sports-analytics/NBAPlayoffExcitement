@@ -323,7 +323,7 @@ library(teamcolors)
 champscol1 <- intersect(allTeams, champsfreq1$champs1)
 primcolors1 <- gather(data.frame(lapply(sort(champscol1), team_pal))[1,])$value
 
-#### 8W,8E Format ####
+#### 8W8E Format ####
 #Doing 20000 series simulations
 S <- 10000
 playoffSim2 <- list()
