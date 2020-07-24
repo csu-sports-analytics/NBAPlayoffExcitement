@@ -282,7 +282,7 @@ for(s in 1:S){
 }
 
 
-#Figuring out the indexing for highOTprob series, upsets, number of 6/7 game series and close games
+#Figuring out the indexing for highOTprob series, upsets, number of 6/7 game series
 upsetIndex1 <- rep(NA,(4*S))
 s <- 1
 #Inital locations of upsets in playoffSim list
@@ -301,7 +301,6 @@ for(i in 1:length(upsetIndex1)){
   s <- s + 1
 }
 
-
 #Number of upsets in a round divided by total number of games
 upsets1 <- rep(NA,length(upsetIndex1))
 s <- 1
@@ -316,15 +315,6 @@ s <- 1
 for(i in 1:length(upsetIndex1)){
   g6g7Index1 <- upsetIndex1[i]+1
   longSeries1[s] <- playoffSim1718Curr[[g6g7Index1]]
-  s <- s + 1
-}
-
-#Number of series that went to 6 or 7 games
-closeGames1 <- rep(NA,length(upsetIndex1))
-s <- 1
-for(i in 1:length(upsetIndex1)){
-  closeIndex1 <- upsetIndex1[i]+2
-  closeGames1[s] <- playoffSim1718Curr[[closeIndex1]]
   s <- s + 1
 }
 
@@ -455,7 +445,7 @@ for(s in 1:S){
   playoffSim17188W8E <- c(playoffSim17188W8E,finals_mu,finalsresults[5],finalsresults[6],finalsresults[7],finalsresults[8],finalsresults[9])
 }
 
-#Figuring out the indexing for highOTprob series, upsets, number of 6/7 game series and close games
+#Figuring out the indexing for highOTprob series, upsets, number of 6/7 game series
 upsetIndex2 <- rep(NA,(4*S))
 s <- 1
 #Inital locations of upsets in playoffSim list
@@ -474,7 +464,6 @@ for(i in 1:length(upsetIndex2)){
   s <- s + 1
 }
 
-
 #Number of upsets in a round divided by total number of games
 upsets2 <- rep(NA,length(upsetIndex2))
 s <- 1
@@ -490,15 +479,6 @@ s <- 1
 for(i in 1:length(upsetIndex2)){
   g6g7Index2 <- upsetIndex2[i]+1
   longSeries2[s] <- playoffSim17188W8E[[g6g7Index2]]
-  s <- s + 1
-}
-
-#Number of series that went to 6 or 7 games
-closeGames2 <- rep(NA,length(upsetIndex2))
-s <- 1
-for(i in 1:length(upsetIndex2)){
-  closeIndex2 <- upsetIndex2[i]+2
-  closeGames2[s] <- playoffSim17188W8E[[closeIndex2]]
   s <- s + 1
 }
 
@@ -629,7 +609,7 @@ for(s in 1:S){
 }
 
 
-#Figuring out the indexing for highOTprob series, upsets, number of 6/7 game series and close games
+#Figuring out the indexing for highOTprob series, upsets, number of 6/7 game series
 upsetIndex3 <- rep(NA,(4*S))
 s <- 1
 #Inital locations of upsets in playoffSim list
@@ -648,7 +628,6 @@ for(i in 1:length(upsetIndex3)){
   s <- s + 1
 }
 
-
 #Number of upsets in a round divided by total number of games
 upsets3 <- rep(NA,length(upsetIndex3))
 s <- 1
@@ -656,7 +635,6 @@ for(i in 1:length(upsetIndex3)){
   upsets3[s] <- playoffSim171816[[upsetIndex3[i]]]
   s <- s + 1
 }
-
 
 #Number of series that went to 6 or 7 games
 longSeries3 <- rep(NA,length(upsetIndex3))
@@ -667,14 +645,6 @@ for(i in 1:length(upsetIndex3)){
   s <- s + 1
 }
 
-#Number of series that went to 6 or 7 games
-closeGames3 <- rep(NA,length(upsetIndex3))
-s <- 1
-for(i in 1:length(upsetIndex3)){
-  closeIndex3 <- upsetIndex3[i]+2
-  closeGames3[s] <- playoffSim171816[[closeIndex3]]
-  s <- s + 1
-}
 
 #Champions
 champs3 <- rep(NA,S)

@@ -123,16 +123,6 @@ getMets <- function(postseason, year){
     }
   }
   
-  #Getting Number of Close Games
-  numClose <- data.frame(as.character(c(1:4, "Tot")),rep(0,5))
-  colnames(numClose) <- c("Round", "n")
-  closeInd <- which(abs(postseason$VisPts-postseason$HomePts) <= 3)
-  numClose$n[5] <- length(closeInd)
-  for(i in 1:length(closeInd)){
-    j <- closeInd[i]
-    numClose$n[postseason$Round[j]] <- numClose$n[postseason$Round[j]] + 1
-  }
-  
   #Getting Number of Upsets
   VisSeed <- rep(0,nrow(postseason))
   HomeSeed <- rep(0, nrow(postseason))
@@ -161,7 +151,6 @@ getMets <- function(postseason, year){
   #Getting percentages
   numOT$n <- numOT$n/numGames$n
   numLongSeries$n <- numLongSeries$n/c(8,4,2,1,15)
-  numClose$n <- numClose$n/numGames$n
   numUpset$n <- numUpset$n/numGames$n
   
   return(c(numOT, numLongSeries, numClose, numUpset, numGames))
@@ -184,7 +173,6 @@ for(y in min_year:max_year){
   metrics <- getMets(postseason, y)
   assign(paste0(y, "_OT"), rebuild_metric(metrics[c(1,2)],y))
   assign(paste0(y, "_longSeries"), rebuild_metric(metrics[c(3,4)],y))
-  assign(paste0(y, "_Close"), rebuild_metric(metrics[c(5,6)],y))
   assign(paste0(y, "_Upset"), rebuild_metric(metrics[c(7,8)],y))
   assign(paste0(y, "_Games"), rebuild_metric(metrics[c(9,10)],y))
 }
@@ -202,12 +190,6 @@ gatherMet <- function(metric){
 
 #### Getting each metric and sorting them by round to make plotting easier ####
 #Also giving top 3 results in each round a Year to make labelling easier
-past_Close <- gatherMet("Close") %>% 
-  arrange(desc(n)) %>% 
-  group_by(Round) %>% 
-  mutate(., Year = if_else(row_number()<4, as.numeric(V3), NaN)) %>%
-  ungroup(.) %>%
-  arrange(Round)
 past_Upset <- gatherMet("Upset") %>% 
   arrange(desc(n)) %>% 
   group_by(Round) %>% 
